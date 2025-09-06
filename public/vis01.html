@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Learning Vis</title>
+    <!-- Use a static link for the vis.js library from a CDN -->
+    <script type="text/javascript" src="https://visjs.github.io/vis-network/standalone/vis-network.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+            text-align: center;
+        }
+        #myNetworkContainer {
+            width: 80%;
+            height: 600px;
+            border: 1px solid #ddd;
+            margin: 2em auto;
+            border-radius: 8px;
+        }
+        #myVisualizeButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        #myVisualizeButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>My Learning Journey Visualization</h1>
+    <p>Click the button to visualize a simple knowledge graph derived from a journal entry.</p>
+
+    <button id="myVisualizeButton" onclick="myCreateVis()">Visualize Learning</button>
+    
+    <div id="myNetworkContainer"></div>
+
+    <script>
+        // Use a static link to the function instead of addEventListener
+        myVisualizeButton.onclick = myCreateVis;
+
+        // This function simulates the output from an LLM.
+        // In a real application, you would make an API call here.
+        async function mySimulateLlmOutput() {
+            // We use await to simulate a network request delay.
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+
+            // The LLM's output is structured as a list of nodes and edges.
+            // Nodes represent concepts, and edges represent relationships.
+            const myData = {
+                nodes: [
+                    {id: 1, label: 'Recursion'},
+                    {id: 2, label: 'Function'},
+                    {id: 3, label: 'Programming Concepts'},
+                    {id: 4, label: 'Infinite Loop'},
+                    {id: 5, label: 'Base Case'},
+                    {id: 6, label: 'Data Structures'},
+                    {id: 7, label: 'Arrays'},
+                    {id: 8, label: 'Linked Lists'}
+                ],
+                edges: [
+                    {from: 1, to: 2, label: 'is a type of'},
+                    {from: 2, to: 3, label: 'is a'},
+                    {from: 1, to: 4, label: 'can lead to'},
+                    {from: 1, to: 5, label: 'requires a'},
+                    {from: 6, to: 7, label: 'includes'},
+                    {from: 6, to: 8, label: 'includes'},
+                    {from: 3, to: 6, label: 'contains'},
+                    {from: 7, to: 8, label: 'is different from'},
+                ]
+            };
+            return myData;
+        }
+
+        // This async function creates and displays the visualization.
+        async function myCreateVis() {
+            try {
+                // Get the data from our simulated LLM output.
+                const myLlmData = await mySimulateLlmOutput();
+
+                // Get the HTML container for the network visualization.
+                const myContainer = document.getElementById('myNetworkContainer');
+
+                // Define the options for the visualization.
+                // We make the graph dynamic and adjust the physics.
+                const myOptions = {
+                    physics: {
+                        enabled: true,
+                        // This makes the nodes spread out naturally.
+                        stabilization: false, 
+                        // The 'barnesHut' solver is a good default for performance.
+                        solver: 'barnesHut' 
+                    }
+                };
+
+                // Create a new network instance.
+                // The network requires a container, the data, and the options.
+                const myNetwork = new vis.Network(myContainer, myLlmData, myOptions);
+
+            } catch (myError) {
+                // Log any errors that occur.
+                console.error('Failed to create the visualization:', myError);
+            }
+        }
+    </script>
+
+</body>
+</html>
