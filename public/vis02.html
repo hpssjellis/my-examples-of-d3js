@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>vis.js: Network, Timeline, Graph3D — Single File Demo</title>
+  <!-- Minimal page-wide style for readability -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- CDN scripts (modern vis.js split packages) -->
+  <!-- Network -->
+  <script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css">
+  <!-- Timeline (standalone build includes CSS inside JS) -->
+  <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+  <!-- Graph3D -->
+  <script src="https://unpkg.com/vis-graph3d@7.1.2/dist/vis-graph3d.min.js"></script>
+</head>
+<body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height:1.35; margin:16px;">
+
+  <h1 style="margin:0 0 8px 0;">vis.js Single-File Demo</h1>
+  <p style="margin:0 0 16px 0;">
+    This page shows three common components: <b>Network</b>, <b>Timeline</b>, and <b>Graph3D</b>.
+    All code is inline and uses simple buttons with <code>onclick</code>.
+  </p>
+
+  <!-- =============== NETWORK =============== -->
+  <h2 style="margin:24px 0 8px 0;">Network</h2>
+  <div id="myNetwork" style="width:100%; height:320px; border:1px solid #ccc; border-radius:10px;"></div>
+  <div style="margin:8px 0;">
+    <input type="text" id="myNodeLabelInput" placeholder="new node label" style="padding:6px; border-radius:8px; border:1px solid #ccc; width:200px;">
+    <input type="button" value="Add Node" onclick="myAddNode()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Add Edge (selected ➜ selected)" onclick="myAddEdgeBetweenSelected()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Toggle Physics" onclick="myTogglePhysics()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Fit" onclick="myNetworkFit()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+  </div>
+
+  <!-- =============== TIMELINE =============== -->
+  <h2 style="margin:24px 0 8px 0;">Timeline</h2>
+  <div id="myTimeline" style="width:100%; height:240px; border:1px solid #ccc; border-radius:10px;"></div>
+  <div style="margin:8px 0;">
+    <input type="button" value="Add Today Item" onclick="myAddTodayItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer;">
+    <input type="button" value="Focus Latest" onclick="myFocusLatestTimelineItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom In" onclick="myTimelineZoomIn()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom Out" onclick="myTimelineZoomOut()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+  </div>
+
+  <!-- =============== GRAPH 3D =============== -->
+  <h2 style="margin:24px 0 8px 0;">Graph3D (Surface)</h2>
+  <div id="myGraph3D" style="width:100%; height:320px; border:1px solid #ccc; border-radius:10px;"></div>
+  <div style="margin:8px 0;">
+    <input type="button" value="Randomize" onclick="myRandomize3D()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer;">
+    <input type="button" value="Smooth Surface" onclick="mySet3DSurface()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Bars" onclick="mySet3DBars()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Dots" onclick="mySet3DDots()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+  </div>
+
+  <script>
+    // ========== NETWORK ==========
+    let myNetworkInstance, myNetworkNodes, myNetworkEdges, myPhysicsOn = true;
+
+    function myInitNetwork() {
+      // Basic nodes/edges
+      myNetworkNodes = new vis.DataSet([
+        { id: 1, label: 'Node 1' },
+        { id: 2, label: 'Node 2' },
+        { id: 3, label: 'Node 3' },
+        { id: 4, label: 'Node 4' },
+        { id: 5, label: 'Node 5' },
+      ]);
+
+      myNetworkEdges = new vis.DataSet([
+        { from: 1, to: 3 },
+        { from: 1, to: 2 },
+        { from: 2, to: 4 },
+        { from: 2, to: 5 },
+      ]);
+
+      const myContainer = document.getElementById('myNetwork');
+      const myData = { nodes: myNetworkNodes, edges: myNetworkEdges };
+      const myOptions = {
+        physics: { enabled: myPhysicsOn, stabilization: { iterations: 150 } },
+        interaction: { hover: true },
+        nodes: { shape: 'dot', size: 14, font: { size: 16 } },
+        edges: { smooth: { type: 'dynamic' } }
+      };
+
+      myNetworkInstance = new vis.Network(myContainer, myData, myOptions);
+    }
+
+    function myAddNode() {
+      const myLabel = document.getElementById('myNodeLabelInput').value.trim() || `Node ${myNetworkNodes.length + 1}`;
+      const myId = Date.now(); // quick unique id
+      myNetworkNodes.add({ id: myId, label: myLabel });
+      // Optionally connect to a random existing node
+      if (myNetworkNodes.length > 1) {
+        const myAll = myNetworkNodes.getIds().filter(x => x !== myId);
+        const myRand = myAll[Math.floor(Math.random() * myAll.length)];
+        myNetworkEdges.add({ from: myRand, to: myId });
+      }
+    }
+
+    function myAddEdgeBetweenSelected() {
+      const mySel = myNetworkInstance.getSelectedNodes();
+      if (mySel.length >= 2) {
+        myNetworkEdges.add({ from: mySel[0], to: mySel[1] });
+      } else {
+        alert('Select at least two nodes to connect.');
+      }
+    }
+
+    function myTogglePhysics() {
+      myPhysicsOn = !myPhysicsOn;
+      myNetworkInstance.setOptions({ physics: { enabled: myPhysicsOn } });
+    }
+
+    function myNetworkFit() {
+      myNetworkInstance.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+    }
+
+    // ========== TIMELINE ==========
+    let myTimelineInstance, myTimelineItems;
+
+    function myInitTimeline() {
+      const myContainer = document.getElementById('myTimeline');
+      myTimelineItems = new vis.DataSet([
+        { id: 1, content: 'Kickoff', start: '2025-09-01' },
+        { id: 2, content: 'Prototype', start: '2025-09-05', end: '2025-09-08' },
+        { id: 3, content: 'Review', start: '2025-09-10' }
+      ]);
+
+      const myOptions = {
+        stack: true,
+        zoomMin: 1000 * 60 * 60 * 24, // 1 day
+        zoomMax: 1000 * 60 * 60 * 24 * 365, // ~1 year
+        orientation: 'top',
+      };
+
+      myTimelineInstance = new vis.Timeline(myContainer, myTimelineItems, myOptions);
+      myTimelineInstance.fit();
+    }
+
+    function myAddTodayItem() {
+      const myId = Date.now();
+      const myToday = new Date();
+      myTimelineItems.add({ id: myId, content: 'Today', start: myToday.toISOString().slice(0, 10) });
+      myTimelineInstance.setSelection(myId, { focus: true });
+    }
+
+    function myFocusLatestTimelineItem() {
+      const myAll = myTimelineItems.get();
+      if (myAll.length === 0) return;
+      const mySorted = myAll.slice().sort((a, b) => new Date(a.start) - new Date(b.start));
+      const myLast = mySorted[mySorted.length - 1];
+      myTimelineInstance.setSelection(myLast.id, { focus: true });
+    }
+
+    function myTimelineZoomIn() {
+      myTimelineInstance.zoomIn(0.5);
+    }
+
+    function myTimelineZoomOut() {
+      myTimelineInstance.zoomOut(0.5);
+    }
+
+    // ========== GRAPH 3D ==========
+    let myGraph3DInstance, myGraph3DData, myGraph3DOptions;
+
+    function myInitGraph3D() {
+      const myContainer = document.getElementById('myGraph3D');
+      myGraph3DData = new vis.DataSet();
+      // Fill with a smooth surface z = sin(r)/r
+      for (let myX = -10; myX <= 10; myX++) {
+        for (let myY = -10; myY <= 10; myY++) {
+          const myR = Math.sqrt(myX * myX + myY * myY) || 1e-9;
+          const myZ = Math.sin(myR) / myR;
+          myGraph3DData.add({ x: myX, y: myY, z: myZ });
+        }
+      }
+
+      myGraph3DOptions = {
+        style: 'surface',
+        xLabel: 'X', yLabel: 'Y', zLabel: 'Z',
+        keepAspectRatio: true,
+        verticalRatio: 0.5,
+        cameraPosition: { horizontal: 1.0, vertical: 0.6, distance: 1.7 }
+      };
+
+      myGraph3DInstance = new vis.Graph3d(myContainer, myGraph3DData, myGraph3DOptions);
+    }
+
+    function myRandomize3D() {
+      const myItems = myGraph3DData.get();
+      for (let i = 0; i < myItems.length; i++) {
+        const it = myItems[i];
+        const myNoise = (Math.random() - 0.5) * 0.2;
+        myGraph3DData.update({ id: it.id, z: it.z + myNoise });
+      }
+    }
+
+    function mySet3DSurface() {
+      myGraph3DInstance.setOptions({ style: 'surface' });
+    }
+
+    function mySet3DBars() {
+      myGraph3DInstance.setOptions({ style: 'bar' });
+    }
+
+    function mySet3DDots() {
+      myGraph3DInstance.setOptions({ style: 'dot' });
+    }
+
+    // ========== BOOTSTRAP EVERYTHING ==========
+    function myInitAll() {
+      myInitNetwork();
+      myInitTimeline();
+      myInitGraph3D();
+    }
+
+    // Run immediately once page loads (no addEventListener per your preference)
+    // Simple inline approach:
+    (function(){ myInitAll(); })();
+  </script>
+
+  <p style="margin-top:24px; font-size:12px; color:#555;">
+    Notes: This demo uses modern vis packages from UNPKG CDNs:
+    <code>vis-network</code>, <code>vis-timeline</code>, and <code>vis-graph3d</code>.
+    If you prefer the legacy monolithic <code>vis.js</code>, swap the script tags accordingly.
+  </p>
+</body>
+</html>
