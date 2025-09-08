@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>D3.js Hierarchy CSV Demo</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h2>D3.js Hierarchy with CSV Upload/Download</h2>
+  <input type="file" id="myFileInput" accept=".csv"><br><br>
+  <input type="button" value="Save CSV" onclick="mySaveCSV()">
+
+  <svg id="mySvg" width="800" height="600" style="border:1px solid black;"></svg>
+
+  <script>
+    let myWidth = 800, myHeight = 600;
+    let mySvg = d3.select("#mySvg"), myG = mySvg.append("g").attr("transform", "translate(40,0)");
+
+    let myTreeLayout = d3.tree().size([myHeight - 100, myWidth - 200]);
+    let myRoot;
+
+    // Default data
+    let myData = [
+      {id: "Food", parent: ""},
+      {id: "Meat", parent: "Food"},
+      {id: "Carbs", parent: "Food"},
+      {id: "Veggies", parent: "Food"},
+      {id: "Salmon", parent: "Meat"},
+      {id: "Steak", parent: "Meat"},
+      {id: "Chicken", parent: "Meat"},
+      {id: "Round", parent: "Steak"},
+      {id: "Ribeye", parent: "Steak"},
+      {id: "Tbone", parent: "Steak"}
+    ];
+
+    function myUpdateTree(myData) {
+      mySvg.selectAll(".link").remove();
+      mySvg.selectAll(".node").remove();
+
+      myRoot = d3.stratify()(myData);
+      myTreeLayout(myRoot);
+
+      mySvg.selectAll('.link')
+        .data(myRoot.links())
+        .enter().append('line')
+        .attr('class', 'link')
+        .attr('x1', d => d.source.y + 50)
+        .attr('y1', d => d.source.x + 50)
+        .attr('x2', d => d.target.y + 50)
+        .attr('y2', d => d.target.x + 50)
+        .style('stroke', '#aaa');
+
+      let myNodes = mySvg.selectAll('.node')
+        .data(myRoot.descendants())
+        .enter().append('g')
+        .attr('class', 'node')
+        .attr('transform', d => `translate(${d.y + 50},${d.x + 50})`);
+
+      myNodes.append('circle')
+        .attr('r', 20)
+        .style('fill', d => d.children ? "#69b3a2" : "#ffd700")
+        .on("click", (event, d) => myOnClickNode(d));
+
+      myNodes.append('text')
+        .attr('dy', 5)
+        .attr('x', d => d.children ? -30 : 30)
+        .style('text-anchor', d => d.children ? 'end' : 'start')
+        .text(d => d.id);
+    }
+
+    function myOnClickNode(d) {
+      if (d.id === "Chicken") {
+        alert("Fun Fact: Chickens are the closest living relatives of the T-Rex!");
+      }
+    }
+
+    function mySaveCSV() {
+      let csvContent = "id,parent\n" + myData.map(d => `${d.id},${d.parent}`).join("\n");
+      let blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "treeData.csv";
+      link.click();
+    }
+
+    document.getElementById("myFileInput").addEventListener("change", function(evt) {
+      let file = evt.target.files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = function(e) {
+        let contents = e.target.result;
+        myData = d3.csvParse(contents);
+        myUpdateTree(myData);
+      };
+      reader.readAsText(file);
+    });
+
+    myUpdateTree(myData);
+  </script>
+</body>
+</html>
