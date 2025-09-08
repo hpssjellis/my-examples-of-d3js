@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON Editor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.4.1/jsoneditor.min.css" rel="stylesheet" type="text/css">
+
+
+  
+</head>
+<body>
+
+    <div id="myJsonEditorContainer"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.4.1/jsoneditor.min.js"></script>
+
+    <script>
+        // Use a descriptive variable name as per your preference
+        const myInitialJsonData = {
+            "name": "Jane Doe",
+            "age": 30,
+            "isStudent": false,
+            "courses": ["History", "Math"]
+        };
+
+        const myContainer = document.getElementById("myJsonEditorContainer");
+
+        const myOptions = {
+            // Options for the editor can be configured here
+        };
+
+        // Create the JSON editor instance
+        const myJsonEditor = new JSONEditor(myContainer, myOptions, myInitialJsonData);
+    </script>
+</body>
+</html>
