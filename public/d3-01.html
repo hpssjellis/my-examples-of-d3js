@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Simple D3.js Graph</title>
+ <!--   <script src="https://d3js.org/d3.v7.min.js"></script>  -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+
+
+    
+    <style>
+        /* This is a small amount of CSS to make the graph look good */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        svg {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .myNode {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        .myLink {
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>My Simple Learning Graph</h1>
+    <svg id="myGraphSvg"></svg>
+
+    <script>
+        // Use a function to contain all the graph-building logic
+        function myCreateSimpleGraph() {
+            // Define the data for our graph. This is a very small dataset.
+            const myNodesData = [
+                { id: "Physics" },
+                { id: "Math" },
+                { id: "History" },
+                { id: "Newtonian Mechanics", group: "Physics" },
+                { id: "Algebra", group: "Math" },
+                { id: "World War II", group: "History" }
+            ];
+
+            const myLinksData = [
+                { source: "Physics", target: "Newtonian Mechanics" },
+                { source: "Math", target: "Algebra" },
+                { source: "History", target: "World War II" },
+                { source: "Physics", target: "Math" } // A link between subjects
+            ];
+
+            // Select the SVG element and get its dimensions
+            const mySvg = d3.select("#myGraphSvg");
+            const myWidth = 800;
+            const myHeight = 600;
+
+            mySvg.attr("width", myWidth).attr("height", myHeight);
+
+            // Create a force simulation. This is the "engine" that
+            // makes the nodes move and repel/attract each other.
+            const mySimulation = d3.forceSimulation(myNodesData)
+                .force("link", d3.forceLink(myLinksData).id(d => d.id).distance(100))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(myWidth / 2, myHeight / 2));
+
+            // Create the lines (links) that connect the nodes
+            const myLinkElements = mySvg.append("g")
+                .attr("class", "myLinks")
+                .selectAll("line")
+                .data(myLinksData)
+                .enter().append("line")
+                .attr("class", "myLink");
+
+            // Create the circles (nodes) that represent our data points
+            const myNodeElements = mySvg.append("g")
+                .attr("class", "myNodes")
+                .selectAll("circle")
+                .data(myNodesData)
+                .enter().append("circle")
+                .attr("class", "myNode")
+                .attr("r", 15)
+                .attr("fill", d => {
+                    // Use a different color for "main" nodes
+                    if (d.group) {
+                        return "#5B4B8A";
+                    }
+                    return "#A51C30";
+                })
+                .call(myDragBehavior()); // Attach the dragging behavior
+
+            // Add text labels to the nodes
+            const myTextElements = mySvg.append("g")
+                .attr("class", "myLabels")
+                .selectAll("text")
+                .data(myNodesData)
+                .enter().append("text")
+                .text(d => d.id)
+                .attr("dx", 20)
+                .attr("dy", 5)
+                .style("font-size", "14px")
+                .style("fill", "#333");
+
+            // This function is called on every "tick" of the simulation.
+            // It updates the position of the lines and circles.
+            mySimulation.on("tick", () => {
+                myLinkElements
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                myNodeElements
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                myTextElements
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            });
+
+            // This is the function that defines how a node should be dragged.
+            function myDragBehavior() {
+                // The d3.drag() function handles the mouse and touch events for us.
+                return d3.drag()
+                    .on("start", myDragStarted)
+                    .on("drag", myDragged)
+                    .on("end", myDragEnded);
+            }
+
+            // The "start" event for dragging
+            function myDragStarted(event, d) {
+                // Restart the simulation to make it react to the drag
+                if (!event.active) mySimulation.alphaTarget(0.3).restart();
+                // "Fix" the node's position to its current x and y
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            // The "drag" event for dragging
+            function myDragged(event, d) {
+                // Update the fixed position of the node as it is dragged
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            // The "end" event for dragging
+            function myDragEnded(event, d) {
+                // Stop the simulation from "restarting" when the drag is finished
+                if (!event.active) mySimulation.alphaTarget(0);
+                // Release the "fixed" position so it can move freely again
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        // Call our main function to create the graph when the page loads
+        myCreateSimpleGraph();
+    </script>
+
+</body>
+</html>
