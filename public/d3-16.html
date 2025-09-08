@@ -510,7 +510,7 @@ tbone,steak,T-Bone,`;
                 if (d.data.fact) {
                     myShowMessage(d.data.fact);
                 } else {
-                    myShowMessage("No fact available for this node.");
+                    myShowMessage("No fact available for this node. Use the **Ctrl key** to select multiple nodes for adding a line.");
                 }
             }
         }
@@ -585,15 +585,18 @@ tbone,steak,T-Bone,`;
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
             const myNewNodeFact = document.getElementById('myNewNodeFact').value;
-
+            
+            // Validation
             if (!myNewNodeName || !myNewNodeParentId) {
                 myShowMessage("Node Name and Parent ID are required.");
                 return;
             }
 
+            // Get the current list of nodes as a flat array
             const myRawData = myRootNode.descendants().map(d => d.data);
-            const myParentNode = myRawData.find(d => d.id === myNewNodeParentId);
-            if (!myParentNode) {
+
+            const myParentNodeData = myRawData.find(d => d.id === myNewNodeParentId);
+            if (!myParentNodeData) {
                 myShowMessage("Parent node not found with the given ID.");
                 return;
             }
@@ -606,13 +609,32 @@ tbone,steak,T-Bone,`;
                 fact: myNewNodeFact || ""
             };
 
+            // Add the new node to the raw data
             myRawData.push(myNewDataPoint);
 
-            myDrawData({
-                nodes: myRawData,
-                links: myArbitraryLinks
-            });
+            // Save current positions to re-apply them later
+            const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+
+            // Re-stratify and re-layout the data to get the new hierarchy structure
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
             
+            myTreeLayout(myRootNode);
+
+            // Restore the saved positions for all existing nodes. The new node will not have one.
+            myRootNode.descendants().forEach(d => {
+                const oldPos = myCurrentPositions.get(d.id);
+                if (oldPos) {
+                    d.x = oldPos.x;
+                    d.y = oldPos.y;
+                }
+            });
+
+            // Update the visualization
+            myUpdate(myRootNode);
+            
+            // Clear the form and dialog
             document.getElementById('myAddNodeDialog').style.display = 'none';
             document.getElementById('myNewNodeName').value = '';
             document.getElementById('myNewNodeParentId').value = '';
