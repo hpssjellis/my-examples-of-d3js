@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js Tree Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        #myButtons {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .myButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .myButton:hover {
+            transform: translateY(-2px);
+        }
+        #myLoadButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #mySaveButton {
+            background-color: #2196F3;
+            color: white;
+        }
+        #myAddButton {
+            background-color: #9C27B0;
+            color: white;
+        }
+        #myAddLineButton {
+            background-color: #FF9800;
+            color: white;
+        }
+        #myFitScreenButton {
+            background-color: #FF5722;
+            color: white;
+        }
+        .myButton:active {
+            transform: translateY(0);
+        }
+        .node circle {
+            fill: #999;
+            stroke: steelblue;
+            stroke-width: 3px;
+        }
+        .node text {
+            font-size: 12px;
+            font-family: sans-serif;
+        }
+        .link {
+            fill: none;
+            stroke: #555;
+            stroke-opacity: 0.4;
+            stroke-width: 1.5px;
+        }
+        .arbitrary-link {
+            fill: none;
+            stroke: #FF9800;
+            stroke-dasharray: 5, 5;
+            stroke-width: 2px;
+        }
+        .draggable {
+            cursor: grab;
+        }
+        .dragging {
+            cursor: grabbing;
+        }
+        .selected circle {
+            stroke: red;
+            stroke-width: 4px;
+        }
+        #myFactDisplayArea {
+            width: 80%;
+            height: 100px;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            resize: vertical;
+        }
+        #myAddNodeDialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #myAddNodeDialog input {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>D3.js Hierarchical Data Demo</h1>
+
+    <div id="myButtons">
+        <input type="file" id="myFileLoad" style="display: none;" onchange="myLoadFile(event)">
+        <button class="myButton" id="myLoadButton" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
+        <button class="myButton" id="mySaveButton" onclick="mySaveData()">Save to JSON</button>
+        <button class="myButton" id="myAddButton" onclick="myShowAddNodeDialog()">Add Node</button>
+        <button class="myButton" id="myAddLineButton" onclick="myAddLine()">Add Line</button>
+        <button class="myButton" id="myFitScreenButton" onclick="myFitToScreen()">Fit to Screen</button>
+    </div>
+
+    <textarea id="myFactDisplayArea" rows="4" readonly placeholder="Click a node to see its fact."></textarea>
+
+    <svg id="mySvgContainer"></svg>
+
+    <div id="myAddNodeDialog">
+        <h3>Add New Node</h3>
+        <input type="text" id="myNewNodeName" placeholder="Node Name">
+        <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
+        <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="myButton" onclick="myAddNewNode()">Add</button>
+            <button class="myButton" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // Global variables for the D3 visualization
+        let mySvg, myWidth, myHeight;
+        let myTreeLayout;
+        let myRootNode;
+        let myArbitraryLinks = []; // New array to hold non-hierarchical links
+        let myIsDragging = false;
+        let mySelectedNodes = []; // Array to track selected nodes for adding lines
+        let myZoomBehavior;
+
+        // Default data in a CSV string format with a 'fact' column
+        const myDefaultData = `id,parentId,name,fact
+food,,Food,
+meat,food,Meat,
+carbs,food,Carbs,
+veggies,food,Veggies,
+salmon,meat,Salmon,
+steak,meat,Steak,
+chicken,meat,Chicken,"Chickens can fly, but only for short distances. The chicken is the closest living relative of the T-rex."
+round,steak,Round,
+ribeye,steak,Ribeye,
+tbone,steak,T-Bone,`;
+
+        // Run the initialization function when the page loads
+        window.onload = function() {
+            myWidth = 960;
+            myHeight = 600;
+
+            myZoomBehavior = d3.zoom().on("zoom", myZoomed);
+
+            mySvg = d3.select("#mySvgContainer")
+                .attr("width", myWidth)
+                .attr("height", myHeight)
+                .call(myZoomBehavior)
+                .append("g");
+
+            // Add a click handler to the SVG background to unselect nodes
+            mySvg.on("click", myUnselectAllNodes);
+
+            // Initialize the tree layout
+            myTreeLayout = d3.tree()
+                .size([myWidth, myHeight - 150]);
+
+            // Load the default data initially
+            myDrawData({
+                nodes: d3.csvParse(myDefaultData),
+                links: []
+            });
+        };
+
+        // Function to handle zooming and panning
+        function myZoomed(event) {
+            mySvg.attr("transform", event.transform);
+        }
+
+        // Function to unselect all nodes
+        function myUnselectAllNodes() {
+            d3.selectAll('.node.selected').classed('selected', false);
+            mySelectedNodes = [];
+        }
+
+        // Function to fit the graph to the screen
+        function myFitToScreen() {
+            // Get the bounding box of all nodes and links
+            const myNodeElements = d3.selectAll(".node").nodes();
+            const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
+            
+            const allElements = [...myNodeElements, ...myLinkElements];
+            if (allElements.length === 0) {
+                return;
+            }
+
+            const myCombinedBoundingBox = allElements.reduce((box, el) => {
+                const b = el.getBBox();
+                return {
+                    x: Math.min(box.x, b.x),
+                    y: Math.min(box.y, b.y),
+                    width: Math.max(box.width, b.x + b.width),
+                    height: Math.max(box.y + b.y)
+                };
+            }, { x: Infinity, y: Infinity, width: -Infinity, height: -Infinity });
+
+            const myScale = Math.min(myWidth / myCombinedBoundingBox.width, myHeight / myCombinedBoundingBox.height) * 0.9;
+            const myTranslateX = (myWidth / 2) - (myCombinedBoundingBox.x + myCombinedBoundingBox.width / 2) * myScale;
+            const myTranslateY = (myHeight / 2) - (myCombinedBoundingBox.y + myCombinedBoundingBox.height / 2) * myScale;
+
+            d3.select("#mySvgContainer")
+                .transition()
+                .duration(750)
+                .call(myZoomBehavior.transform, d3.zoomIdentity.translate(myTranslateX, myTranslateY).scale(myScale));
+        }
+
+        // Function to process and draw the data
+        function myDrawData(data) {
+            const myRawData = data.nodes;
+            myArbitraryLinks = data.links;
+
+            // Stratify the flat data into a hierarchy
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
+            
+            // Apply the tree layout to generate x and y coordinates
+            myTreeLayout(myRootNode);
+
+            // Initialize x0 and y0 for transitions
+            myRootNode.descendants().forEach(d => {
+                // If a node has stored x/y, use it, otherwise use the tree layout's
+                const myLoadedData = myRawData.find(item => item.id === d.id);
+                d.x = myLoadedData && myLoadedData.x ? +myLoadedData.x : d.x;
+                d.y = myLoadedData && myLoadedData.y ? +myLoadedData.y : d.y;
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+
+            // Update the visualization
+            myUpdate(myRootNode);
+        }
+
+        // The core update function to draw or redraw the nodes and links
+        function myUpdate(source) {
+            const myNodeData = myRootNode.descendants();
+            const myTreeLinkData = myRootNode.links();
+            const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
+
+            // Create a D3 drag behavior
+            const myDragBehavior = d3.drag()
+                .on("start", myDragStart)
+                .on("drag", myDragged)
+                .on("end", myDragEnd);
+
+            // ---- Update the tree links ----
+            const myTreeLink = mySvg.selectAll(".link")
+                .data(myTreeLinkData, d => d.target.id);
+
+            myTreeLink.enter().append("path")
+                .attr("class", "link")
+                .attr("d", d3.linkVertical()
+                    .x(d => d.x0)
+                    .y(d => d.y0))
+                .merge(myTreeLink)
+                .transition()
+                .duration(500)
+                .attr("d", d3.linkVertical()
+                    .x(d => d.x)
+                    .y(d => d.y));
+
+            // ---- Update the arbitrary links ----
+            // Filter out any arbitrary links that don't have corresponding nodes in the current data
+            const validArbitraryLinks = myArbitraryLinks.filter(d => myNodesById.has(d.sourceId) && myNodesById.has(d.targetId));
+            const myArbitraryLink = mySvg.selectAll(".arbitrary-link")
+                .data(validArbitraryLinks, d => `${d.sourceId}-${d.targetId}`);
+
+            const myLineGenerator = d3.line()
+                .x(d => myNodesById.get(d.sourceId).x)
+                .y(d => myNodesById.get(d.sourceId).y);
+
+            myArbitraryLink.enter().append("path")
+                .attr("class", "arbitrary-link")
+                .attr("d", d => myLineGenerator([myNodesById.get(d.sourceId), myNodesById.get(d.targetId)]))
+                .merge(myArbitraryLink)
+                .transition()
+                .duration(500)
+                .attr("d", d => myLineGenerator([myNodesById.get(d.sourceId), myNodesById.get(d.targetId)]));
+            
+            // ---- Update the nodes ----
+            const myNode = mySvg.selectAll(".node")
+                .data(myNodeData, d => d.id);
+
+            // Enter any new nodes
+            const myNodeEnter = myNode.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${source.x0},${source.y0})`)
+                .on("click", myClickNode);
+
+            // Add circles to the new nodes
+            myNodeEnter.append("circle")
+                .attr("r", 10)
+                .style("fill", d => d._children ? "lightsteelblue" : "#fff");
+
+            // Add text labels to the new nodes
+            myNodeEnter.append("text")
+                .attr("dy", "0.31em")
+                .attr("x", d => d._children || d.data.children ? -15 : 15)
+                .attr("text-anchor", d => d._children || d.data.children ? "end" : "start")
+                .text(d => d.data.name);
+
+            // Merge new nodes with the existing ones
+            const myNodeUpdate = myNodeEnter.merge(myNode);
+
+            // Transition nodes to their new positions
+            myNodeUpdate.transition()
+                .duration(500)
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // Apply drag behavior to the nodes
+            myNodeUpdate.call(myDragBehavior);
+
+            // Store the old positions for animation
+            myNodeData.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+        
+        // Drag functions
+        function myDragStart(event, d) {
+            myIsDragging = true;
+            d3.select(this).classed("dragging", true);
+        }
+
+        function myDragged(event, d) {
+            d.x = event.x;
+            d.y = event.y;
+            d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+
+            const myNodesById = new Map(myRootNode.descendants().map(node => [node.id, node]));
+
+            // Update hierarchical links connected to the dragged node
+            mySvg.selectAll(".link")
+                .filter(link => link.source.id === d.id || link.target.id === d.id)
+                .attr("d", d3.linkVertical()
+                    .x(link => myNodesById.get(link.x))
+                    .y(link => myNodesById.get(link.y)));
+
+            // Update arbitrary links connected to the dragged node
+            const myLineGenerator = d3.line()
+                .x(node => myNodesById.get(node.id).x)
+                .y(node => myNodesById.get(node.id).y);
+            
+            mySvg.selectAll(".arbitrary-link")
+                .filter(link => link.sourceId === d.id || link.targetId === d.id)
+                .attr("d", link => myLineGenerator([myNodesById.get(link.sourceId), myNodesById.get(link.targetId)]));
+        }
+
+        function myDragEnd(event, d) {
+            myIsDragging = false;
+            d3.select(this).classed("dragging", false);
+        }
+
+        // Function to handle clicking on a node
+        function myClickNode(event, d) {
+            // Stop the event propagation to prevent it from reaching the SVG background
+            event.stopPropagation();
+
+            if (myIsDragging) return;
+
+            // Toggle selection on the node
+            const myIndex = mySelectedNodes.indexOf(d);
+            if (myIndex > -1) {
+                mySelectedNodes.splice(myIndex, 1);
+                d3.select(event.currentTarget).classed('selected', false);
+            } else {
+                mySelectedNodes.push(d);
+                d3.select(event.currentTarget).classed('selected', true);
+            }
+
+            // Also display the fact for the clicked node
+            if (d.data.fact) {
+                myShowMessage(d.data.fact);
+            } else {
+                myShowMessage("No fact available for this node.");
+            }
+        }
+
+        // Function to add a new line
+        function myAddLine() {
+            if (mySelectedNodes.length < 2) {
+                myShowMessage("Please select at least two nodes to add a line.");
+                return;
+            }
+
+            const mySourceNode = mySelectedNodes[0];
+            const myTargetNodes = mySelectedNodes.slice(1);
+
+            for (const myTargetNode of myTargetNodes) {
+                // Prevent self-linking and duplicates
+                if (mySourceNode.id === myTargetNode.id) continue;
+                
+                const myExistingLink = myArbitraryLinks.find(
+                    link => (link.sourceId === mySourceNode.id && link.targetId === myTargetNode.id) ||
+                            (link.sourceId === myTargetNode.id && link.targetId === mySourceNode.id)
+                );
+                if (myExistingLink) continue;
+
+                myArbitraryLinks.push({ sourceId: mySourceNode.id, targetId: myTargetNode.id });
+            }
+
+            // Redraw the graph with the new link
+            myUpdate(myRootNode);
+
+            // Clear the selection
+            myUnselectAllNodes();
+            myShowMessage(`Added a new line from "${mySourceNode.data.name}" to the other selected nodes.`);
+        }
+
+        // Function to display messages in the text area
+        function myShowMessage(message) {
+            document.getElementById("myFactDisplayArea").value = message;
+        }
+
+        // Function to show the "Add Node" dialog
+        function myShowAddNodeDialog() {
+            if (mySelectedNodes.length === 1) {
+                document.getElementById('myNewNodeParentId').value = mySelectedNodes[0].id;
+                document.getElementById('myAddNodeDialog').style.display = 'flex';
+            } else if (mySelectedNodes.length === 0) {
+                myShowMessage("Please select a single node to be the parent of the new node.");
+            } else {
+                myShowMessage("Please select ONLY one node to add a child node to.");
+            }
+        }
+
+        // Function to add a new node
+        function myAddNewNode() {
+            const myNewNodeName = document.getElementById('myNewNodeName').value;
+            const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+            const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+
+            if (!myNewNodeName || !myNewNodeParentId) {
+                myShowMessage("Node Name and Parent ID are required.");
+                return;
+            }
+
+            const myRawData = myRootNode.descendants().map(d => d.data);
+            const myParentNode = myRawData.find(d => d.id === myNewNodeParentId);
+            if (!myParentNode) {
+                myShowMessage("Parent node not found with the given ID.");
+                return;
+            }
+
+            const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
+            const myNewDataPoint = {
+                id: myNewNodeId,
+                parentId: myNewNodeParentId,
+                name: myNewNodeName,
+                fact: myNewNodeFact || ""
+            };
+
+            myRawData.push(myNewDataPoint);
+
+            myDrawData({
+                nodes: myRawData,
+                links: myArbitraryLinks
+            });
+            
+            document.getElementById('myAddNodeDialog').style.display = 'none';
+            document.getElementById('myNewNodeName').value = '';
+            document.getElementById('myNewNodeParentId').value = '';
+            document.getElementById('myNewNodeFact').value = '';
+            myUnselectAllNodes();
+        }
+
+        // Function to handle the file upload
+        function myLoadFile(event) {
+            const myFile = event.target.files[0];
+            if (!myFile) {
+                return;
+            }
+            const myReader = new FileReader();
+            myReader.onload = function(e) {
+                try {
+                    const myJsonContent = JSON.parse(e.target.result);
+                    myDrawData(myJsonContent);
+                    myShowMessage("File loaded successfully!");
+                } catch (error) {
+                    myShowMessage("Error loading file. Please ensure it is a valid JSON file.");
+                }
+            };
+            myReader.readAsText(myFile);
+        }
+        
+        // Function to create a link and download the data
+        function mySaveData() {
+            const mySavedNodes = myRootNode.descendants().map(d => {
+                return {
+                    id: d.id,
+                    parentId: d.parent ? d.parent.id : "",
+                    name: d.data.name,
+                    fact: d.data.fact || "",
+                    x: d.x,
+                    y: d.y
+                };
+            });
+
+            const myDataToSave = {
+                nodes: mySavedNodes,
+                links: myArbitraryLinks
+            };
+
+            const myJson = JSON.stringify(myDataToSave, null, 2);
+            const myBlob = new Blob([myJson], { type: "application/json" });
+            const myUrl = URL.createObjectURL(myBlob);
+            const myLink = document.createElement("a");
+            myLink.setAttribute("href", myUrl);
+            myLink.setAttribute("download", "d3_graph_data.json");
+            myLink.style.display = "none";
+            document.body.appendChild(myLink);
+            myLink.click();
+            document.body.removeChild(myLink);
+            myShowMessage("Graph saved to d3_graph_data.json!");
+        }
+    </script>
+</body>
+</html>
