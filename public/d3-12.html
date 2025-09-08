@@ -359,35 +359,19 @@ tbone,steak,T-Bone,`;
         // Drag functions
         function myDragStart(event, d) {
             myIsDragging = true;
-            d3.select(this).classed("dragging", true);
+            d3.select(this).raise().classed("dragging", true); // Raise the node to the top
         }
 
         function myDragged(event, d) {
-            // Update the data of the dragged node
             d.x = event.x;
             d.y = event.y;
-            // Update the position of the dragged node's group
             d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
-
-            // Update hierarchical links connected to the dragged node
-            d3.selectAll(".link")
-                .filter(link => link.source.id === d.id || link.target.id === d.id)
-                .attr("d", link => d3.linkVertical()({
-                    source: link.source,
-                    target: link.target
-                }));
-
-            const myNodesById = new Map(myRootNode.descendants().map(node => [node.id, node]));
-
-            // Update arbitrary links connected to the dragged node
-            d3.selectAll(".arbitrary-link")
-                .filter(link => link.sourceId === d.id || link.targetId === d.id)
-                .attr("d", link => myLineGenerator([myNodesById.get(link.sourceId), myNodesById.get(link.targetId)]));
         }
 
         function myDragEnd(event, d) {
             myIsDragging = false;
             d3.select(this).classed("dragging", false);
+            myUpdate(d); // Redraw the graph from the perspective of the dragged node
         }
 
         // Function to handle clicking on a node
