@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON File Editor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.4.1/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <style>
+        body { font-family: sans-serif; }
+        #myControls { margin: 10px 0; }
+        #myJsonEditorContainer { height: 500px; }
+        .myButton {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="myControls">
+        <a href="javascript:mySaveJsonFile();" class="myButton">Save JSON</a>
+        <label class="myButton">
+            Load JSON
+            <input type="file" id="myFileLoader" style="display: none;">
+        </label>
+    </div>
+
+    <div id="myJsonEditorContainer"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.4.1/jsoneditor.min.js"></script>
+
+    <script>
+        // Use a descriptive variable name as per your preference
+        const myInitialJsonData = {
+            "title": "Sample JSON Data",
+            "version": "1.0.0",
+            "items": [
+                { "name": "Item A", "value": 123 },
+                { "name": "Item B", "value": 456 }
+            ]
+        };
+
+        const myContainer = document.getElementById("myJsonEditorContainer");
+
+        const myOptions = {
+            mode: 'code', // Set the initial mode for the editor
+            modes: ['code', 'tree', 'text']
+        };
+
+        // Create the JSON editor instance
+        const myJsonEditor = new JSONEditor(myContainer, myOptions, myInitialJsonData);
+
+        const myFileLoader = document.getElementById("myFileLoader");
+
+        // Use async/await for cleaner file handling
+        const mySaveJsonFile = async () => {
+            try {
+                // Get the current JSON data from the editor
+                const myJsonData = await myJsonEditor.get();
+                // Convert the JSON object to a formatted string
+                const myJsonString = JSON.stringify(myJsonData, null, 2);
+                
+                // Create a Blob from the JSON string
+                const myBlob = new Blob([myJsonString], { type: 'application/json' });
+                const myUrl = URL.createObjectURL(myBlob);
+
+                // Create a temporary link element to trigger the download
+                const myLink = document.createElement('a');
+                myLink.href = myUrl;
+                myLink.download = 'data.json';
+                myLink.click();
+                
+                // Clean up the URL object
+                URL.revokeObjectURL(myUrl);
+                
+            } catch (error) {
+                alert('Error saving JSON: ' + error.message);
+            }
+        };
+
+        const myLoadJsonFile = (myEvent) => {
+            const myFile = myEvent.target.files[0];
+            if (!myFile) {
+                return;
+            }
+
+            const myReader = new FileReader();
+
+            myReader.onload = (e) => {
+                try {
+                    const myContent = e.target.result;
+                    const myLoadedJson = JSON.parse(myContent);
+                    myJsonEditor.set(myLoadedJson); // Set the editor's content to the loaded JSON
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                }
+            };
+
+            myReader.readAsText(myFile);
+        };
+
+        // Attach the load function to the file input's change event
+        myFileLoader.addEventListener('change', myLoadJsonFile);
+    </script>
+</body>
+</html>
