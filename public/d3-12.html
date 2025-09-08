@@ -369,12 +369,15 @@ tbone,steak,T-Bone,`;
             // Update the position of the dragged node's group
             d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
 
-            const myNodesById = new Map(myRootNode.descendants().map(node => [node.id, node]));
-
             // Update hierarchical links connected to the dragged node
             d3.selectAll(".link")
                 .filter(link => link.source.id === d.id || link.target.id === d.id)
-                .attr("d", d3.linkVertical());
+                .attr("d", link => d3.linkVertical()({
+                    source: link.source,
+                    target: link.target
+                }));
+
+            const myNodesById = new Map(myRootNode.descendants().map(node => [node.id, node]));
 
             // Update arbitrary links connected to the dragged node
             d3.selectAll(".arbitrary-link")
