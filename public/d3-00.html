@@ -56,6 +56,10 @@
             background-color: #FF5722;
             color: white;
         }
+        #myTidyUpButton {
+            background-color: #6c757d;
+            color: white;
+        }
         .myButton:active {
             transform: translateY(0);
         }
@@ -168,6 +172,7 @@
         <button class="myButton" id="myAddButton" onclick="myShowAddNodeDialog()">Add Node</button>
         <button class="myButton" id="myAddLineButton" onclick="myShowAddLineDialog()">Add Line</button>
         <button class="myButton" id="myFitScreenButton" onclick="myFitToScreen()">Fit to Screen</button>
+        <button class="myButton" id="myTidyUpButton" onclick="myTidyUpGraph()">Tidy Up</button>
     </div>
 
     <svg id="mySvgContainer"></svg>
@@ -196,7 +201,7 @@
     <div id="myAddLineDialog" class="my-dialog">
         <h3>Add New Line</h3>
         <p>Select two nodes on the graph first.</p>
-        <input type="text" id="myJoiningFact" placeholder="Joining Fact">
+        <input type="text" id="myJoiningFact" placeholder="Joining Fact (optional)">
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
             <button class="myButton" onclick="myAddLineWithFact()">Add</button>
             <button class="myButton" onclick="document.getElementById('myAddLineDialog').style.display = 'none'">Cancel</button>
@@ -296,6 +301,19 @@ tbone,steak,T-Bone,`;
             d3.selectAll('.node.selected').classed('selected', false);
             mySelectedNodes = [];
         }
+        
+        // Function to reset the graph layout to a clean tree structure
+        function myTidyUpGraph() {
+            if (!myRootNode) return;
+            
+            // Re-apply the tree layout to the current root node
+            myTreeLayout(myRootNode);
+
+            // Update the visualization to animate nodes back to their calculated positions
+            myUpdate(myRootNode);
+
+            myShowMessage("Graph layout has been reset.");
+        }
 
         // Function to fit the graph to the screen
         function myFitToScreen() {
@@ -383,6 +401,9 @@ tbone,steak,T-Bone,`;
                     .x(d => d.x)
                     .y(d => d.y));
 
+            // REMOVE old links
+            myTreeLink.exit().remove();
+
             // ---- Update the arbitrary links ----
             // Filter out any arbitrary links that don't have corresponding nodes in the current data
             const validArbitraryLinks = myArbitraryLinks.filter(d => myNodesById.has(d.sourceId) && myNodesById.has(d.targetId));
@@ -442,6 +463,9 @@ tbone,steak,T-Bone,`;
             // Apply drag behavior to the nodes
             myNodeUpdate.call(myDragBehavior);
 
+            // REMOVE old nodes
+            myNode.exit().remove();
+
             // Store the old positions for animation
             myNodeData.forEach(d => {
                 d.x0 = d.x;
@@ -465,6 +489,7 @@ tbone,steak,T-Bone,`;
             myIsDragging = false;
             d3.select(this).classed("dragging", false);
             myUpdate(d); // Redraw the graph from the perspective of the dragged node
+            myShowMessage(d.data.fact || "No fact available for this node.");
         }
 
         // Function to handle clicking on a node
@@ -472,7 +497,7 @@ tbone,steak,T-Bone,`;
             // Stop the event propagation to prevent it from reaching the SVG background
             event.stopPropagation();
 
-            // If a drag is in progress, do nothing
+            // If a drag just happened, the click event is a side effect, so we ignore it.
             if (myIsDragging) return;
 
             // Check if the Ctrl key is held down for selection
@@ -489,13 +514,16 @@ tbone,steak,T-Bone,`;
             } else {
                 // If Ctrl is not pressed, unselect all and just display the fact
                 myUnselectAllNodes();
+                d3.select(event.currentTarget).classed('selected', true);
+                mySelectedNodes.push(d);
                 if (d.data.fact) {
                     myShowMessage(d.data.fact);
                 } else {
-                    myShowMessage("No fact available for this node.");
+                    myShowMessage("No fact available for this node. Use the **Ctrl key** to select multiple nodes for adding a line.");
                 }
             }
         }
+
 
         // Function to show the "Add Line" dialog
         function myShowAddLineDialog() {
@@ -510,8 +538,8 @@ tbone,steak,T-Bone,`;
         function myAddLineWithFact() {
             const myJoiningFact = document.getElementById('myJoiningFact').value;
 
-            if (mySelectedNodes.length < 2 || !myJoiningFact) {
-                myShowMessage("Please select at least two nodes and enter a fact.");
+            if (mySelectedNodes.length < 2) {
+                myShowMessage("Please select at least two nodes.");
                 return;
             }
 
@@ -542,7 +570,7 @@ tbone,steak,T-Bone,`;
             document.getElementById('myAddLineDialog').style.display = 'none';
             document.getElementById('myJoiningFact').value = '';
             myUnselectAllNodes();
-            myShowMessage(`Added a new line with fact: "${myJoiningFact}".`);
+            myShowMessage(`Added a new line.${myJoiningFact ? ` with fact: "${myJoiningFact}"` : ""}`);
         }
 
         // Function to display messages in the text area
@@ -567,15 +595,18 @@ tbone,steak,T-Bone,`;
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
             const myNewNodeFact = document.getElementById('myNewNodeFact').value;
-
+            
+            // Validation
             if (!myNewNodeName || !myNewNodeParentId) {
                 myShowMessage("Node Name and Parent ID are required.");
                 return;
             }
 
+            // Get the current list of nodes as a flat array
             const myRawData = myRootNode.descendants().map(d => d.data);
-            const myParentNode = myRawData.find(d => d.id === myNewNodeParentId);
-            if (!myParentNode) {
+
+            const myParentNodeData = myRawData.find(d => d.id === myNewNodeParentId);
+            if (!myParentNodeData) {
                 myShowMessage("Parent node not found with the given ID.");
                 return;
             }
@@ -588,13 +619,32 @@ tbone,steak,T-Bone,`;
                 fact: myNewNodeFact || ""
             };
 
+            // Add the new node to the raw data
             myRawData.push(myNewDataPoint);
 
-            myDrawData({
-                nodes: myRawData,
-                links: myArbitraryLinks
-            });
+            // Save current positions to re-apply them later
+            const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+
+            // Re-stratify and re-layout the data to get the new hierarchy structure
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
             
+            myTreeLayout(myRootNode);
+
+            // Restore the saved positions for all existing nodes. The new node will not have one.
+            myRootNode.descendants().forEach(d => {
+                const oldPos = myCurrentPositions.get(d.id);
+                if (oldPos) {
+                    d.x = oldPos.x;
+                    d.y = oldPos.y;
+                }
+            });
+
+            // Update the visualization
+            myUpdate(myRootNode);
+            
+            // Clear the form and dialog
             document.getElementById('myAddNodeDialog').style.display = 'none';
             document.getElementById('myNewNodeName').value = '';
             document.getElementById('myNewNodeParentId').value = '';
@@ -612,6 +662,8 @@ tbone,steak,T-Bone,`;
             myReader.onload = function(e) {
                 try {
                     const myJsonContent = JSON.parse(e.target.result);
+                    // Clear the SVG before drawing new data
+                    d3.select("#mySvgContainer g").selectAll("*").remove(); 
                     myDrawData(myJsonContent);
                     myShowMessage("File loaded successfully!");
                 } catch (error) {
@@ -640,6 +692,12 @@ tbone,steak,T-Bone,`;
             };
 
             const myJson = JSON.stringify(myDataToSave, null, 2);
+            
+            // Set the value of the textarea to the JSON string.
+            // This is the main change: removing the myShowMessage call that would
+            // have overwritten the JSON content with a simple message.
+            document.getElementById("myFactDisplayArea").value = myJson;
+
             const myBlob = new Blob([myJson], { type: "application/json" });
             const myUrl = URL.createObjectURL(myBlob);
             const myLink = document.createElement("a");
@@ -649,7 +707,6 @@ tbone,steak,T-Bone,`;
             document.body.appendChild(myLink);
             myLink.click();
             document.body.removeChild(myLink);
-            myShowMessage("Graph saved to d3_graph_data.json!");
         }
     </script>
 </body>
