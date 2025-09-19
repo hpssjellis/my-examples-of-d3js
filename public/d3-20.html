@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Nano & D3.js Interactive Graph</title>
+    <style>
+        /* Combined styles from both original files */
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #334155;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .my-container {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 900px; /* Wider container */
+            width: 95%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .my-button {
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .my-load-button {
+            background-color: #4b5563;
+        }
+
+        .my-stream-button {
+            background-color: #10b981;
+        }
+
+        .my-save-button {
+            background-color: #2563eb;
+        }
+
+        .my-button:disabled {
+            background-color: #a3a3a3;
+            cursor: not-allowed;
+        }
+
+        .my-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .my-button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .my-textarea {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .my-output {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .my-status {
+            min-height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+        
+        .my-footer {
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .my-footer a {
+            color: #4b5563;
+            text-decoration: none;
+        }
+
+        /* D3.js styles */
+        #myD3Controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .myD3Button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .myD3Button:hover {
+            transform: translateY(-2px);
+        }
+        #myLoadD3Button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #mySaveD3Button {
+            background-color: #2196F3;
+            color: white;
+        }
+        #myAddD3Button {
+            background-color: #9C27B0;
+            color: white;
+        }
+        #myAddLineD3Button {
+            background-color: #FF9800;
+            color: white;
+        }
+        #myFitScreenD3Button {
+            background-color: #FF5722;
+            color: white;
+        }
+        #myTidyUpD3Button {
+            background-color: #6c757d;
+            color: white;
+        }
+        .myD3Button:active {
+            transform: translateY(0);
+        }
+        .node circle {
+            fill: #999;
+            stroke: steelblue;
+            stroke-width: 3px;
+        }
+        .node text {
+            font-size: 12px;
+            font-family: sans-serif;
+        }
+        .link {
+            fill: none;
+            stroke: #555;
+            stroke-opacity: 0.4;
+            stroke-width: 1.5px;
+        }
+        .arbitrary-link {
+            fill: none;
+            stroke: #FF9800;
+            stroke-dasharray: 5, 5;
+            stroke-width: 2px;
+        }
+        .draggable {
+            cursor: grab;
+        }
+        .dragging {
+            cursor: grabbing;
+        }
+        .selected circle {
+            stroke: red;
+            stroke-width: 4px;
+        }
+        .line-text {
+            font-size: 10px;
+            fill: #FF9800;
+            text-anchor: middle;
+        }
+        .my-movable-dialog {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            min-width: 300px;
+            max-width: 90%;
+            min-height: 150px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            resize: both;
+            overflow: hidden;
+        }
+        .my-movable-dialog-header {
+            padding: 10px;
+            background-color: #f0f0f0;
+            cursor: grab;
+            border-bottom: 1px solid #ccc;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .my-movable-dialog-header:active {
+            cursor: grabbing;
+        }
+        #myFactDisplayArea {
+            flex-grow: 1;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: none;
+            outline: none;
+            font-family: monospace;
+            resize: none;
+        }
+        .my-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .my-dialog input {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+        <div class="my-container">
+        <h1 class="text-3xl font-bold">Client-side-Chrome GeminiNano API</h1>
+        <p class="text-sm text-gray-500">
+            For desktop/laptop only. Needs 4GB download and 22GB free space.
+        </p>
+        <div class="my-button-group">
+            <button id="myLoadButton" onclick="myLoadModel()" class="my-button my-load-button">Load Model</button>
+            <button id="myStreamButton" onclick="myToggleStream()" class="my-button my-stream-button">Generate Graph</button>
+            <button id="mySaveButton" onclick="mySaveJSONFile()" class="my-button my-save-button" disabled>Save Output JSON</button>
+        </div>
+        
+        <textarea id="myInputPrompt" class="my-textarea" rows="4" placeholder="Type your prompt here...">Generate a single JSON object about animals. The object must contain two top-level keys: "nodes" and "links". The "nodes" value must be an array of objects, each with "id" (a unique ordered number), "parentId" (a string corresponding to its parent's id, or an empty string for the root node which in this cass will have the name "animals"), "name" (a descriptive string), and "fact" (a string containing a brief interesting fact about the node). The "links" value must be an empty array []. Do not include any text outside of the JSON object.</textarea>
+        
+        <div id="myDiv01" class="my-status">...</div>
+        
+        <textarea id="myOutput" class="my-textarea my-output" rows="10" readonly></textarea>
+    </div>
+
+    <hr>
+
+        <div class="my-container">
+        <h1>D3.js Hierarchical Data Demo</h1>
+        <div id="myD3Controls">
+            <input type="file" id="myFileLoad" style="display: none;" onchange="myLoadFile(event)">
+            <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
+            <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
+            <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog()">Add Node</button>
+            <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
+            <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
+            <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
+        </div>
+
+        <svg id="mySvgContainer"></svg>
+
+                <div id="myFactDialog" class="my-movable-dialog">
+            <div id="myFactDialogHeader" class="my-movable-dialog-header">
+                Node Fact
+            </div>
+            <textarea id="myFactDisplayArea" rows="4" readonly placeholder="Click a node to see its fact."></textarea>
+        </div>
+
+                <div id="myAddNodeDialog" class="my-dialog">
+            <h3>Add New Node</h3>
+            <input type="text" id="myNewNodeName" placeholder="Node Name">
+            <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
+            <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="myD3Button" onclick="myAddNewNode()">Add</button>
+                <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+
+                <div id="myAddLineDialog" class="my-dialog">
+            <h3>Add New Line</h3>
+            <p>Select two nodes on the graph first.</p>
+            <input type="text" id="myJoiningFact" placeholder="Joining Fact (optional)">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="myD3Button" onclick="myAddLineWithFact()">Add</button>
+                <button class="myD3Button" onclick="document.getElementById('myAddLineDialog').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="my-footer">
+        Use at your own risk.<br>
+        By Jeremy Ellis <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">LinkedIn</a>
+    </footer>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        /* Gemini Nano API - Global variables and functions */
+        let mySession = null;
+        const myInputPrompt = document.getElementById('myInputPrompt');
+        const myOutput = document.getElementById('myOutput');
+        const myDiv01 = document.getElementById('myDiv01');
+        const myStreamButton = document.getElementById('myStreamButton');
+        const myLoadButton = document.getElementById('myLoadButton');
+        const mySaveButton = document.getElementById('mySaveButton');
+        let myStartTime = 0;
+        let myTimerInterval = null;
+        let myLastGeneratedText = '';
+        let myController = null;
+        let myIsProcessing = false;
+
+        function myUpdateTimerDisplay() {
+            const myElapsed = (Date.now() - myStartTime) / 1000;
+            myDiv01.textContent = `Thinking... ${myElapsed.toFixed(2)}s`;
+        }
+        
+        function myResetStreamState() {
+            myLastGeneratedText = '';
+            myOutput.value = '';
+            if (myTimerInterval) {
+                clearInterval(myTimerInterval);
+                myTimerInterval = null;
+            }
+            myController = null;
+        }
+
+        async function myLoadModel() {
+            if (myIsProcessing) return;
+            myDiv01.textContent = 'Loading model...';
+            try {
+                myIsProcessing = true;
+                if (typeof LanguageModel === 'undefined') {
+                    myDiv01.textContent = 'Error: LanguageModel API is not available. Please enable the required flags.';
+                    return;
+                }
+                mySession = await LanguageModel.create();
+                myDiv01.textContent = 'Model loaded successfully. Ready to generate graph.';
+                myLoadButton.disabled = true;
+            } catch (myError) {
+                myDiv01.textContent = `Error loading model: ${myError.message}`;
+            } finally {
+                myIsProcessing = false;
+            }
+        }
+
+        async function myToggleStream() {
+            if (myStreamButton.textContent === 'Stop' && myController) {
+                myController.abort();
+                return;
+            }
+            
+            if (myIsProcessing) return;
+
+            myResetStreamState();
+            
+            const myPrompt = myInputPrompt.value.trim();
+            if (!mySession) {
+                myOutput.value = 'Please load the model first.';
+                myDiv01.textContent = '...';
+                return;
+            }
+            if (!myPrompt) {
+                myOutput.value = 'Please enter a prompt.';
+                myDiv01.textContent = '...';
+                return;
+            }
+            
+            myStreamButton.textContent = 'Stop';
+            mySaveButton.disabled = true;
+            myStartTime = Date.now();
+            myTimerInterval = setInterval(myUpdateTimerDisplay, 100);
+            myController = new AbortController();
+
+            try {
+                myIsProcessing = true;
+                const myStream = await mySession.promptStreaming(myPrompt, { signal: myController.signal });
+                for await (const myChunk of myStream) {
+                    myLastGeneratedText += myChunk;
+                    myOutput.value = myLastGeneratedText;
+                    myOutput.scrollTop = myOutput.scrollHeight;
+                }
+                
+                // ⭐ NEW LOGIC: Pass the generated JSON to the D3.js visualization
+                const myStartIndex = myLastGeneratedText.indexOf('{');
+                const myEndIndex = myLastGeneratedText.lastIndexOf('}');
+                if (myStartIndex !== -1 && myEndIndex !== -1) {
+                    const mySanitizedText = myLastGeneratedText.substring(myStartIndex, myEndIndex + 1);
+                    try {
+                        const myGeneratedJSON = JSON.parse(mySanitizedText);
+                        // Clear the SVG before drawing new data
+                        d3.select("#mySvgContainer g").selectAll("*").remove(); 
+                        myDrawData(myGeneratedJSON);
+                    } catch (e) {
+                        myDiv01.textContent = `Error: Generated output is not valid JSON. ${e.message}`;
+                    }
+                }
+            } catch (myError) {
+                if (myError.name === 'AbortError') {
+                    myDiv01.textContent = 'Streaming stopped by user.';
+                } else {
+                    myOutput.value = `Error streaming prompt: ${myError.message}`;
+                }
+            } finally {
+                clearInterval(myTimerInterval);
+                const myEndTime = Date.now();
+                const myDurationSeconds = (myEndTime - myStartTime) / 1000;
+                const myCharCount = myLastGeneratedText.length;
+                const myWordCount = myLastGeneratedText.split(/\s+/).filter(myWord => myWord.length > 0).length;
+                const myCharsPerSecond = myDurationSeconds > 0 ? (myCharCount / myDurationSeconds).toFixed(2) : '0.00';
+                const myWordsPerSecond = myDurationSeconds > 0 ? (myWordCount / myDurationSeconds).toFixed(2) : '0.00';
+                myDiv01.innerHTML =
+                    `Completed in ${myDurationSeconds.toFixed(2)}s<br>` +
+                    `Chars: ${myCharCount} (${myCharsPerSecond}/s)<br>` +
+                    `Words: ${myWordCount} (${myWordsPerSecond}/s)`;
+                myStreamButton.textContent = 'Generate Graph';
+                myStreamButton.disabled = false;
+                mySaveButton.disabled = false;
+                myIsProcessing = false;
+                myController = null;
+            }
+        }
+
+        function mySaveJSONFile() {
+            const myOutputText = myOutput.value;
+            if (myOutputText.trim() === '') {
+                myDiv01.textContent = 'Output is empty. Nothing to save.';
+                return;
+            }
+            try {
+                const myStartIndex = myOutputText.indexOf('{');
+                const myEndIndex = myOutputText.lastIndexOf('}');
+                if (myStartIndex === -1 || myEndIndex === -1) {
+                    myDiv01.textContent = 'Error: No valid JSON object found in the output.';
+                    return;
+                }
+                const mySanitizedText = myOutputText.substring(myStartIndex, myEndIndex + 1);
+                JSON.parse(mySanitizedText);
+                const myBlob = new Blob([mySanitizedText], { type: 'application/json' });
+                const myUrl = URL.createObjectURL(myBlob);
+                const myLink = document.createElement('a');
+                myLink.href = myUrl;
+                myLink.download = 'data.json';
+                document.body.appendChild(myLink);
+                myLink.click();
+                document.body.removeChild(myLink);
+                URL.revokeObjectURL(myUrl);
+                myDiv01.textContent = 'JSON file saved successfully.';
+            } catch (e) {
+                myDiv01.textContent = `Error: The sanitized output is not valid JSON. Details: ${e.message}`;
+            }
+        }
+
+        /* D3.js - Global variables and functions */
+        let mySvg, myWidth, myHeight;
+        let myTreeLayout;
+        let myRootNode;
+        let myArbitraryLinks = [];
+        let myIsDragging = false;
+        let mySelectedNodes = [];
+        let myZoomBehavior;
+        const myLineGenerator = d3.line()
+            .x(d => d.x)
+            .y(d => d.y);
+
+        // Default data in a JSON object format
+        const myDefaultData = {
+            nodes: [
+                { id: "food", parentId: "", name: "Food", fact: "" },
+                { id: "meat", parentId: "food", name: "Meat", fact: "" },
+                { id: "carbs", parentId: "food", name: "Carbs", fact: "" },
+                { id: "veggies", parentId: "food", name: "Veggies", fact: "" },
+                { id: "salmon", parentId: "meat", name: "Salmon", fact: "" },
+                { id: "steak", parentId: "meat", name: "Steak", fact: "" },
+                { id: "chicken", parentId: "meat", name: "Chicken", fact: "Chickens can fly, but only for short distances. The chicken is the closest living relative of the T-rex." },
+                { id: "round", parentId: "steak", name: "Round", fact: "" },
+                { id: "ribeye", parentId: "steak", name: "Ribeye", fact: "" },
+                { id: "tbone", parentId: "steak", name: "T-Bone", fact: "" }
+            ],
+            links: []
+        };
+
+        window.onload = function() {
+            myWidth = 960;
+            myHeight = 600;
+
+            myZoomBehavior = d3.zoom().on("zoom", myZoomed);
+
+            mySvg = d3.select("#mySvgContainer")
+                .attr("width", myWidth)
+                .attr("height", myHeight)
+                .call(myZoomBehavior)
+                .append("g");
+            
+            mySvg.on("click", myUnselectAllNodes);
+
+            myTreeLayout = d3.tree()
+                .size([myWidth, myHeight - 150]);
+
+            myDrawData(myDefaultData);
+            myMakeDraggable("myFactDialog", "myFactDialogHeader");
+        };
+
+        function myMakeDraggable(dialogId, headerId) {
+            const myDialog = document.getElementById(dialogId);
+            const myHeader = document.getElementById(headerId);
+
+            myHeader.onmousedown = (e) => {
+                e.preventDefault();
+                let myOffsetX = e.clientX - myDialog.offsetLeft;
+                let myOffsetY = e.clientY - myDialog.offsetTop;
+                
+                function myMouseMove(e) {
+                    myDialog.style.top = (e.clientY - myOffsetY) + 'px';
+                    myDialog.style.left = (e.clientX - myOffsetX) + 'px';
+                }
+
+                function myMouseUp() {
+                    window.removeEventListener('mousemove', myMouseMove);
+                    window.removeEventListener('mouseup', myMouseUp);
+                }
+
+                window.addEventListener('mousemove', myMouseMove);
+                window.addEventListener('mouseup', myMouseUp);
+            };
+        }
+
+        function myZoomed(event) {
+            mySvg.attr("transform", event.transform);
+        }
+
+        function myUnselectAllNodes() {
+            d3.selectAll('.node.selected').classed('selected', false);
+            mySelectedNodes = [];
+        }
+        
+        function myTidyUpGraph() {
+            if (!myRootNode) return;
+            myTreeLayout(myRootNode);
+            myUpdate(myRootNode);
+            myShowMessage("Graph layout has been reset.");
+        }
+
+        function myFitToScreen() {
+            const myNodeElements = d3.selectAll(".node").nodes();
+            const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
+            const allElements = [...myNodeElements, ...myLinkElements];
+            if (allElements.length === 0) {
+                return;
+            }
+            const myCombinedBoundingBox = allElements.reduce((box, el) => {
+                const b = el.getBBox();
+                return {
+                    x: Math.min(box.x, b.x),
+                    y: Math.min(box.y, b.y),
+                    width: Math.max(box.width, b.x + b.width),
+                    height: Math.max(box.height, b.y + b.height)
+                };
+            }, { x: Infinity, y: Infinity, width: -Infinity, height: -Infinity });
+
+            const myScale = Math.min(myWidth / myCombinedBoundingBox.width, myHeight / myCombinedBoundingBox.height) * 0.9;
+            const myTranslateX = (myWidth / 2) - (myCombinedBoundingBox.x + myCombinedBoundingBox.width / 2) * myScale;
+            const myTranslateY = (myHeight / 2) - (myCombinedBoundingBox.y + myCombinedBoundingBox.height / 2) * myScale;
+
+            d3.select("#mySvgContainer")
+                .transition()
+                .duration(750)
+                .call(myZoomBehavior.transform, d3.zoomIdentity.translate(myTranslateX, myTranslateY).scale(myScale));
+        }
+
+        function myDrawData(data) {
+            const myRawData = data.nodes;
+            myArbitraryLinks = data.links;
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
+            
+            myTreeLayout(myRootNode);
+            myRootNode.descendants().forEach(d => {
+                const myLoadedData = myRawData.find(item => item.id === d.id);
+                d.x = myLoadedData && myLoadedData.x ? +myLoadedData.x : d.x;
+                d.y = myLoadedData && myLoadedData.y ? +myLoadedData.y : d.y;
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+            myUpdate(myRootNode);
+        }
+
+        function myUpdate(source) {
+            const myNodeData = myRootNode.descendants();
+            const myTreeLinkData = myRootNode.links();
+            const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
+
+            const myDragBehavior = d3.drag()
+                .on("start", myDragStart)
+                .on("drag", myDragged)
+                .on("end", myDragEnd);
+
+            const myTreeLink = mySvg.selectAll(".link")
+                .data(myTreeLinkData, d => d.target.id);
+
+            myTreeLink.enter().append("path")
+                .attr("class", "link")
+                .attr("d", d3.linkVertical()
+                    .x(d => d.x0)
+                    .y(d => d.y0))
+                .merge(myTreeLink)
+                .transition()
+                .duration(500)
+                .attr("d", d3.linkVertical()
+                    .x(d => d.x)
+                    .y(d => d.y));
+
+            myTreeLink.exit().remove();
+
+            const validArbitraryLinks = myArbitraryLinks.filter(d => myNodesById.has(d.sourceId) && myNodesById.has(d.targetId));
+            
+            const myArbitraryLinkPath = mySvg.selectAll(".arbitrary-link")
+                .data(validArbitraryLinks, d => `${d.sourceId}-${d.targetId}`);
+
+            myArbitraryLinkPath.enter().append("path")
+                .attr("class", "arbitrary-link")
+                .attr("id", d => `path-${d.sourceId}-${d.targetId}`)
+                .attr("d", d => myLineGenerator([myNodesById.get(d.sourceId), myNodesById.get(d.targetId)]))
+                .merge(myArbitraryLinkPath)
+                .attr("d", d => myLineGenerator([myNodesById.get(d.sourceId), myNodesById.get(d.targetId)]));
+                
+            const myArbitraryLinkText = mySvg.selectAll(".line-text")
+                .data(validArbitraryLinks, d => `text-${d.sourceId}-${d.targetId}`);
+
+            myArbitraryLinkText.enter().append("text")
+                .attr("class", "line-text")
+                .merge(myArbitraryLinkText)
+                .html(d => `<textPath href="#path-${d.sourceId}-${d.targetId}" startOffset="50%">${d.joiningFact}</textPath>`);
+
+            myArbitraryLinkText.exit().remove();
+            
+            const myNode = mySvg.selectAll(".node")
+                .data(myNodeData, d => d.id);
+
+            const myNodeEnter = myNode.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${source.x0},${source.y0})`)
+                .on("click", myClickNode);
+
+            myNodeEnter.append("circle")
+                .attr("r", 10)
+                .style("fill", d => d._children ? "lightsteelblue" : "#fff");
+
+            myNodeEnter.append("text")
+                .attr("dy", "0.31em")
+                .attr("x", d => d._children || d.data.children ? -15 : 15)
+                .attr("text-anchor", d => d._children || d.data.children ? "end" : "start")
+                .text(d => d.data.name);
+
+            const myNodeUpdate = myNodeEnter.merge(myNode);
+
+            myNodeUpdate.transition()
+                .duration(500)
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            myNodeUpdate.call(myDragBehavior);
+
+            myNode.exit().remove();
+
+            myNodeData.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+        
+        function myDragStart(event, d) {
+            myIsDragging = true;
+            d3.select(this).raise().classed("dragging", true);
+        }
+
+        function myDragged(event, d) {
+            d.x = event.x;
+            d.y = event.y;
+            d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+        }
+
+        function myDragEnd(event, d) {
+            myIsDragging = false;
+            d3.select(this).classed("dragging", false);
+            myUpdate(d);
+            myShowMessage(d.data.fact || "No fact available for this node.");
+        }
+
+        function myClickNode(event, d) {
+            event.stopPropagation();
+            if (myIsDragging) return;
+            if (event.ctrlKey) {
+                const myIndex = mySelectedNodes.indexOf(d);
+                if (myIndex > -1) {
+                    mySelectedNodes.splice(myIndex, 1);
+                    d3.select(event.currentTarget).classed('selected', false);
+                } else {
+                    mySelectedNodes.push(d);
+                    d3.select(event.currentTarget).classed('selected', true);
+                }
+            } else {
+                myUnselectAllNodes();
+                d3.select(event.currentTarget).classed('selected', true);
+                mySelectedNodes.push(d);
+                if (d.data.fact) {
+                    myShowMessage(d.data.fact);
+                } else {
+                    myShowMessage("No fact available for this node. Use the **Ctrl key** to select multiple nodes for adding a line.");
+                }
+            }
+        }
+
+        function myShowAddLineDialog() {
+            if (mySelectedNodes.length < 2) {
+                myShowMessage("Please select at least two nodes to add a line.");
+                return;
+            }
+            document.getElementById('myAddLineDialog').style.display = 'flex';
+        }
+
+        function myAddLineWithFact() {
+            const myJoiningFact = document.getElementById('myJoiningFact').value;
+
+            if (mySelectedNodes.length < 2) {
+                myShowMessage("Please select at least two nodes.");
+                return;
+            }
+
+            const mySourceNode = mySelectedNodes[0];
+            const myTargetNodes = mySelectedNodes.slice(1);
+
+            for (const myTargetNode of myTargetNodes) {
+                if (mySourceNode.id === myTargetNode.id) continue;
+                
+                const myExistingLink = myArbitraryLinks.find(
+                    link => (link.sourceId === mySourceNode.id && link.targetId === myTargetNode.id) ||
+                            (link.sourceId === myTargetNode.id && link.targetId === mySourceNode.id)
+                );
+                if (myExistingLink) continue;
+
+                myArbitraryLinks.push({ 
+                    sourceId: mySourceNode.id, 
+                    targetId: myTargetNode.id,
+                    joiningFact: myJoiningFact
+                });
+            }
+
+            myUpdate(myRootNode);
+
+            document.getElementById('myAddLineDialog').style.display = 'none';
+            document.getElementById('myJoiningFact').value = '';
+            myUnselectAllNodes();
+            myShowMessage(`Added a new line.${myJoiningFact ? ` with fact: "${myJoiningFact}"` : ""}`);
+        }
+
+        function myShowMessage(message) {
+            document.getElementById("myFactDisplayArea").value = message;
+        }
+
+        function myShowAddNodeDialog() {
+            if (mySelectedNodes.length === 1) {
+                document.getElementById('myNewNodeParentId').value = mySelectedNodes[0].id;
+                document.getElementById('myAddNodeDialog').style.display = 'flex';
+            } else if (mySelectedNodes.length === 0) {
+                myShowMessage("Please select a single node to be the parent of the new node.");
+            } else {
+                myShowMessage("Please select ONLY one node to add a child node to.");
+            }
+        }
+
+        function myAddNewNode() {
+            const myNewNodeName = document.getElementById('myNewNodeName').value;
+            const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+            const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+            
+            if (!myNewNodeName || !myNewNodeParentId) {
+                myShowMessage("Node Name and Parent ID are required.");
+                return;
+            }
+
+            const myRawData = myRootNode.descendants().map(d => d.data);
+            const myParentNodeData = myRawData.find(d => d.id === myNewNodeParentId);
+            if (!myParentNodeData) {
+                myShowMessage("Parent node not found with the given ID.");
+                return;
+            }
+
+            const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
+            const myNewDataPoint = {
+                id: myNewNodeId,
+                parentId: myNewNodeParentId,
+                name: myNewNodeName,
+                fact: myNewNodeFact || ""
+            };
+
+            myRawData.push(myNewDataPoint);
+            const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
+            
+            myTreeLayout(myRootNode);
+            myRootNode.descendants().forEach(d => {
+                const oldPos = myCurrentPositions.get(d.id);
+                if (oldPos) {
+                    d.x = oldPos.x;
+                    d.y = oldPos.y;
+                }
+            });
+            myUpdate(myRootNode);
+            
+            document.getElementById('myAddNodeDialog').style.display = 'none';
+            document.getElementById('myNewNodeName').value = '';
+            document.getElementById('myNewNodeParentId').value = '';
+            document.getElementById('myNewNodeFact').value = '';
+            myUnselectAllNodes();
+        }
+
+        function myLoadFile(event) {
+            const myFile = event.target.files[0];
+            if (!myFile) {
+                return;
+            }
+            const myReader = new FileReader();
+            myReader.onload = function(e) {
+                try {
+                    const myJsonContent = JSON.parse(e.target.result);
+                    d3.select("#mySvgContainer g").selectAll("*").remove(); 
+                    myDrawData(myJsonContent);
+                    myShowMessage("File loaded successfully!");
+                } catch (error) {
+                    myShowMessage("Error loading file. Please ensure it is a valid JSON file.");
+                }
+            };
+            myReader.readAsText(myFile);
+        }
+        
+        function mySaveData() {
+            const mySavedNodes = myRootNode.descendants().map(d => {
+                return {
+                    id: d.id,
+                    parentId: d.parent ? d.parent.id : "",
+                    name: d.data.name,
+                    fact: d.data.fact || "",
+                    x: d.x,
+                    y: d.y
+                };
+            });
+            const myDataToSave = {
+                nodes: mySavedNodes,
+                links: myArbitraryLinks
+            };
+
+            const myJson = JSON.stringify(myDataToSave, null, 2);
+            document.getElementById("myFactDisplayArea").value = myJson;
+
+            const myBlob = new Blob([myJson], { type: "application/json" });
+            const myUrl = URL.createObjectURL(myBlob);
+            const myLink = document.createElement("a");
+            myLink.setAttribute("href", myUrl);
+            myLink.setAttribute("download", "d3_graph_data.json");
+            myLink.style.display = "none";
+            document.body.appendChild(myLink);
+            myLink.click();
+            document.body.removeChild(myLink);
+        }
+    </script>
+</body>
+</html>
