@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Nano & D3.js Interactive Graph</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0; /* Light slate blue */
+            color: #1e293b; /* Dark slate blue */
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .my-container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+            max-width: 1000px;
+            width: 95%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease-in-out;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+        }
+
+        .my-button {
+            padding: 0.8rem 1.8rem;
+            font-weight: 600;
+            color: #fff;
+            border-radius: 9999px; /* Pill shape */
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .my-load-button { background-color: #475569; }
+        .my-stream-button { background-color: #22c55e; }
+        .my-save-button { background-color: #3b82f6; }
+
+        .my-button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .my-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .my-button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .my-textarea {
+            width: 100%;
+            padding: 1.2rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            background-color: #f8fafc;
+        }
+
+        .my-output {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .my-status {
+            min-height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            color: #475569;
+        }
+        
+        .my-footer {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .my-footer a {
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* D3.js Specific Styles */
+        #myD3Controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .myD3Button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: white;
+            font-weight: 600;
+        }
+        .myD3Button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+        }
+        #myLoadD3Button { background-color: #2196F3; }
+        #mySaveD3Button { background-color: #4CAF50; }
+        #myAddD3Button { background-color: #9C27B0; }
+        #myAddLineD3Button { background-color: #FF9800; }
+        #myFitScreenD3Button { background-color: #FF5722; }
+        #myTidyUpD3Button { background-color: #6c757d; }
+        
+        .node circle {
+            fill: #60a5fa;
+            stroke: #2563eb;
+            stroke-width: 3px;
+        }
+        .node text {
+            font-size: 12px;
+            font-family: sans-serif;
+            fill: #334155;
+            text-shadow: 0 1px 1px #fff;
+        }
+        .link {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+        }
+        .arbitrary-link {
+            fill: none;
+            stroke: #FF9800;
+            stroke-dasharray: 5, 5;
+            stroke-width: 2.5px;
+        }
+        .line-text {
+            font-size: 11px;
+            fill: #FF9800;
+            text-anchor: middle;
+            font-weight: bold;
+        }
+        .selected circle {
+            stroke: #dc2626; /* Red border for selected nodes */
+            stroke-width: 5px;
+        }
+
+        .my-movable-dialog {
+            background-color: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            resize: both;
+            overflow: hidden;
+        }
+        .my-movable-dialog-header {
+            padding: 12px;
+            background-color: #f1f5f9;
+            cursor: grab;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: bold;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .my-movable-dialog-header:active { cursor: grabbing; }
+        #myFactDisplayArea {
+            flex-grow: 1;
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: none;
+            outline: none;
+            font-family: monospace;
+            resize: none;
+            background-color: #f8fafc;
+        }
+        .my-dialog {
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .my-dialog h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .my-dialog input {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-family: inherit;
+        }
+        .my-dialog .my-button-group {
+            margin-top: 10px;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="my-container">
+        <h1>Client-side-Chrome GeminiNano API</h1>
+        <p class="text-sm text-gray-500">
+            For desktop/laptop only. Needs 4GB download and 22GB free space.
+        </p>
+        <div class="my-button-group">
+            <button id="myLoadButton" onclick="myLoadModel()" class="my-button my-load-button">Load Model</button>
+            <button id="myStreamButton" onclick="myToggleStream()" class="my-button my-stream-button">Generate Graph</button>
+            <button id="mySaveButton" onclick="mySaveJSONFile()" class="my-button my-save-button" disabled>Save Output JSON</button>
+        </div>
+        
+        <textarea id="myInputPrompt" class="my-textarea" rows="4" placeholder="Type your prompt here...">Generate a single JSON object about animals. The object must contain two top-level keys: "nodes" and "links". The "nodes" value must be an array of objects, each with "id" (a unique ordered number), "parentId" (a string corresponding to its parent's id, or an empty string for the root node which in this cass will have the name "animals"), "name" (a descriptive string), and "fact" (a string containing a brief interesting fact about the node). The "links" value must be an empty array []. Do not include any text outside of the JSON object.</textarea>
+        
+        <div id="myDiv01" class="my-status">...</div>
+        
+        <textarea id="myOutput" class="my-textarea my-output" rows="10" readonly></textarea>
+    </div>
+
+    <hr>
+
+    <div class="my-container">
+        <h2>D3.js Hierarchical Data Demo</h2>
+        <div id="myD3Controls">
+            <input type="file" id="myFileLoad" style="display: none;" onchange="myLoadFile(event)">
+            <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
+            <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
+            <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog()">Add Node</button>
+            <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
+            <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
+            <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
+        </div>
+
+        <svg id="mySvgContainer"></svg>
+
+        <div id="myFactDialog" class="my-movable-dialog" style="position: absolute; bottom: 20px; right: 20px;">
+            <div id="myFactDialogHeader" class="my-movable-dialog-header">
+                Node Fact
+            </div>
+            <textarea id="myFactDisplayArea" rows="4" readonly placeholder="Click a node to see its fact."></textarea>
+        </div>
+
+        <div id="myAddNodeDialog" class="my-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <h3>Add New Node</h3>
+            <input type="text" id="myNewNodeName" placeholder="Node Name">
+            <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
+            <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
+            <div class="my-button-group">
+                <button class="myD3Button my-load-button" onclick="myAddNewNode()">Add</button>
+                <button class="myD3Button my-load-button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+
+        <div id="myAddLineDialog" class="my-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <h3>Add New Line</h3>
+            <p class="text-gray-600">Select two nodes on the graph first.</p>
+            <input type="text" id="myJoiningFact" placeholder="Joining Fact (optional)">
+            <div class="my-button-group">
+                <button class="myD3Button my-load-button" onclick="myAddLineWithFact()">Add</button>
+                <button class="myD3Button my-load-button" onclick="document.getElementById('myAddLineDialog').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="my-footer">
+        Use at your own risk.<br>
+        By Jeremy Ellis <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">LinkedIn</a>
+    </footer>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="myD3Graph.js"></script>
+    
+    <script>
+        /* Gemini Nano API - Global variables and functions */
+        let mySession = null;
+        const myInputPrompt = document.getElementById('myInputPrompt');
+        const myOutput = document.getElementById('myOutput');
+        const myDiv01 = document.getElementById('myDiv01');
+        const myStreamButton = document.getElementById('myStreamButton');
+        const myLoadButton = document.getElementById('myLoadButton');
+        const mySaveButton = document.getElementById('mySaveButton');
+        let myStartTime = 0;
+        let myTimerInterval = null;
+        let myLastGeneratedText = '';
+        let myController = null;
+        let myIsProcessing = false;
+
+        function myUpdateTimerDisplay() {
+            const myElapsed = (Date.now() - myStartTime) / 1000;
+            myDiv01.textContent = `Thinking... ${myElapsed.toFixed(2)}s`;
+        }
+        
+        function myResetStreamState() {
+            myLastGeneratedText = '';
+            myOutput.value = '';
+            if (myTimerInterval) {
+                clearInterval(myTimerInterval);
+                myTimerInterval = null;
+            }
+            myController = null;
+        }
+
+        async function myLoadModel() {
+            if (myIsProcessing) return;
+            myDiv01.textContent = 'Loading model...';
+            try {
+                myIsProcessing = true;
+                if (typeof LanguageModel === 'undefined') {
+                    myDiv01.textContent = 'Error: LanguageModel API is not available. Please enable the required flags.';
+                    return;
+                }
+                mySession = await LanguageModel.create();
+                myDiv01.textContent = 'Model loaded successfully. Ready to generate graph.';
+                myLoadButton.disabled = true;
+            } catch (myError) {
+                myDiv01.textContent = `Error loading model: ${myError.message}`;
+            } finally {
+                myIsProcessing = false;
+            }
+        }
+
+        async function myToggleStream() {
+            if (myStreamButton.textContent === 'Stop' && myController) {
+                myController.abort();
+                return;
+            }
+            
+            if (myIsProcessing) return;
+
+            myResetStreamState();
+            
+            const myPrompt = myInputPrompt.value.trim();
+            if (!mySession) {
+                myOutput.value = 'Please load the model first.';
+                myDiv01.textContent = '...';
+                return;
+            }
+            if (!myPrompt) {
+                myOutput.value = 'Please enter a prompt.';
+                myDiv01.textContent = '...';
+                return;
+            }
+            
+            myStreamButton.textContent = 'Stop';
+            mySaveButton.disabled = true;
+            myStartTime = Date.now();
+            myTimerInterval = setInterval(myUpdateTimerDisplay, 100);
+            myController = new AbortController();
+
+            try {
+                myIsProcessing = true;
+                const myStream = await mySession.promptStreaming(myPrompt, { signal: myController.signal });
+                for await (const myChunk of myStream) {
+                    myLastGeneratedText += myChunk;
+                    myOutput.value = myLastGeneratedText;
+                    myOutput.scrollTop = myOutput.scrollHeight;
+                }
+                
+                const myStartIndex = myLastGeneratedText.indexOf('{');
+                const myEndIndex = myLastGeneratedText.lastIndexOf('}');
+                if (myStartIndex !== -1 && myEndIndex !== -1) {
+                    const mySanitizedText = myLastGeneratedText.substring(myStartIndex, myEndIndex + 1);
+                    try {
+                        const myGeneratedJSON = JSON.parse(mySanitizedText);
+                        window.myDrawData(myGeneratedJSON);
+                    } catch (e) {
+                        myDiv01.textContent = `Error: Generated output is not valid JSON. ${e.message}`;
+                    }
+                }
+            } catch (myError) {
+                if (myError.name === 'AbortError') {
+                    myDiv01.textContent = 'Streaming stopped by user.';
+                } else {
+                    myOutput.value = `Error streaming prompt: ${myError.message}`;
+                }
+            } finally {
+                clearInterval(myTimerInterval);
+                const myEndTime = Date.now();
+                const myDurationSeconds = (myEndTime - myStartTime) / 1000;
+                const myCharCount = myLastGeneratedText.length;
+                const myWordCount = myLastGeneratedText.split(/\s+/).filter(myWord => myWord.length > 0).length;
+                const myCharsPerSecond = myDurationSeconds > 0 ? (myCharCount / myDurationSeconds).toFixed(2) : '0.00';
+                const myWordsPerSecond = myDurationSeconds > 0 ? (myWordCount / myDurationSeconds).toFixed(2) : '0.00';
+                myDiv01.innerHTML =
+                    `Completed in ${myDurationSeconds.toFixed(2)}s<br>` +
+                    `Chars: ${myCharCount} (${myCharsPerSecond}/s)<br>` +
+                    `Words: ${myWordCount} (${myWordsPerSecond}/s)`;
+                myStreamButton.textContent = 'Generate Graph';
+                myStreamButton.disabled = false;
+                mySaveButton.disabled = false;
+                myIsProcessing = false;
+                myController = null;
+            }
+        }
+        
+        function mySaveJSONFile() {
+            const myOutputText = myOutput.value;
+            if (myOutputText.trim() === '') {
+                myDiv01.textContent = 'Output is empty. Nothing to save.';
+                return;
+            }
+            try {
+                const myStartIndex = myOutputText.indexOf('{');
+                const myEndIndex = myOutputText.lastIndexOf('}');
+                if (myStartIndex === -1 || myEndIndex === -1) {
+                    myDiv01.textContent = 'Error: No valid JSON object found in the output.';
+                    return;
+                }
+                const mySanitizedText = myOutputText.substring(myStartIndex, myEndIndex + 1);
+                JSON.parse(mySanitizedText);
+                const myBlob = new Blob([mySanitizedText], { type: 'application/json' });
+                const myUrl = URL.createObjectURL(myBlob);
+                const myLink = document.createElement('a');
+                myLink.href = myUrl;
+                myLink.download = 'data.json';
+                document.body.appendChild(myLink);
+                myLink.click();
+                document.body.removeChild(myLink);
+                URL.revokeObjectURL(myUrl);
+                myDiv01.textContent = 'JSON file saved successfully.';
+            } catch (e) {
+                myDiv01.textContent = `Error: The sanitized output is not valid JSON. Details: ${e.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
