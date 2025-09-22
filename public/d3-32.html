@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Graph with LLM</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #myMainContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        #myGraphContainer {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        #mySvgCanvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            width: 95%;
+            height: 95%;
+        }
+
+        #myControls {
+            padding: 1rem;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .myD3Button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .myD3Button:hover {
+            background-color: #0056b3;
+        }
+        
+        #myLLMSection {
+            padding: 1rem;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #myInputPrompt {
+            width: 90%;
+            height: 60px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            resize: vertical;
+        }
+
+        #myOutput {
+            width: 90%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            overflow-y: scroll;
+        }
+
+        #myNodeDialog, #myLineDialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        #myNodeDialog label, #myLineDialog label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #myNodeDialog input, #myLineDialog select, #myLineDialog input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .myDialogButtons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        #myOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 99;
+            display: none;
+        }
+        
+        .myToast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 101;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #myFileLoad {
+            display: none;
+        }
+        
+        .node circle {
+            cursor: pointer;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+
+        .node circle.selected {
+            fill: crimson;
+        }
+
+        .node text {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+
+        .link {
+            fill: none;
+            stroke: #555;
+            stroke-opacity: 0.4;
+            stroke-width: 1.5px;
+        }
+
+        .link-text {
+            font-size: 10px;
+            fill: #555;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .line {
+            fill: none;
+            stroke: #aaa;
+            stroke-width: 2px;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+<div id="myMainContainer">
+    <div id="myGraphContainer">
+        <svg id="mySvgCanvas"></svg>
+        <input type="file" id="myFileLoad" accept=".json" onchange="myLoadJsonFile(event)">
+    </div>
+    <div id="myControls">
+        <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
+        <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
+        <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog()">Add Node</button>
+        <button class="myD3Button" id="myGenerateD3Button" onclick="myToggleStream()">Generate Node</button>
+        <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
+        <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
+        <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
+    </div>
+    <div id="myLLMSection">
+        <h3>LLM API</h3>
+        <p id="myDiv01">...Waiting for input...</p>
+        <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <textarea id="myInputPrompt" placeholder="Enter a prompt..."></textarea>
+            <textarea id="myOutput" readonly placeholder="Output will appear here..."></textarea>
+        </div>
+    </div>
+</div>
+
+<div id="myNodeDialog">
+    <h3>Add a New Node</h3>
+    <label for="myNewNodeName">Node Name:</label>
+    <input type="text" id="myNewNodeName">
+    <label for="myNewNodeFact">Fact:</label>
+    <input type="text" id="myNewNodeFact">
+    <label for="myNewNodeParent">Parent Node (select):</label>
+    <select id="myNewNodeParent"></select>
+    <div class="myDialogButtons">
+        <button onclick="myAddNode()">Add Node</button>
+        <button onclick="myHideNodeDialog()">Cancel</button>
+    </div>
+</div>
+
+<div id="myLineDialog">
+    <h3>Add a New Line</h3>
+    <label for="myStartNodeSelect">Start Node:</label>
+    <select id="myStartNodeSelect"></select>
+    <label for="myEndNodeSelect">End Node:</label>
+    <select id="myEndNodeSelect"></select>
+    <label for="myLineLabel">Line Label:</label>
+    <input type="text" id="myLineLabel">
+    <div class="myDialogButtons">
+        <button onclick="myAddLine()">Add Line</button>
+        <button onclick="myHideLineDialog()">Cancel</button>
+    </div>
+</div>
+
+<div id="myToastMessage" class="myToast"></div>
+<div id="myOverlay"></div>
+
+<script>
+    // Constants
+    const myWidth = window.innerWidth * 0.95;
+    const myHeight = window.innerHeight * 0.6;
+    const myNodeRadius = 12;
+    const myDuration = 500;
+    const myStreamApiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
+
+    // D3.js setup
+    let mySvg = d3.select("#mySvgCanvas")
+        .attr("viewBox", `0 0 ${myWidth} ${myHeight}`)
+        .attr("preserveAspectRatio", "xMidYMid meet");
+        
+    let myG = mySvg.append("g");
+    let myZoom = d3.zoom()
+        .on("zoom", (event) => {
+            myG.attr("transform", event.transform);
+        });
+    mySvg.call(myZoom);
+
+    // Initial data
+    let myRawData = [
+        { "id": "0", "name": "Universe", "parentId": "", "fact": "Everything that exists." },
+        { "id": "1", "name": "Solar System", "parentId": "0", "fact": "Our planetary home." },
+        { "id": "2", "name": "Earth", "parentId": "1", "fact": "Third planet from the sun." },
+        { "id": "3", "name": "Moon", "parentId": "2", "fact": "Earth's only natural satellite." },
+        { "id": "4", "name": "Sun", "parentId": "1", "fact": "A G-type main-sequence star." }
+    ];
+
+    let myLinksData = [
+        { "source": "0", "target": "1", "label": "contains" },
+        { "source": "1", "target": "2", "label": "contains" },
+        { "source": "2", "target": "3", "label": "orbits" },
+        { "source": "1", "target": "4", "label": "contains" }
+    ];
+
+    // Stratify data
+    let myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+
+    // Tree layout
+    const myTreeLayout = d3.tree()
+        .size([myWidth, myHeight - 100]);
+    myTreeLayout(myRootNode);
+
+    // Initial update
+    let myNodes, myLinks;
+    let myLastNodeId = d3.max(myRawData, d => parseInt(d.id)) + 1;
+    let mySelectedNodes = [];
+
+    // LLM API variables
+    const myInputPrompt = document.getElementById('myInputPrompt');
+    const myOutput = document.getElementById('myOutput');
+    const myDiv01 = document.getElementById('myDiv01');
+    const myStreamButton = document.getElementById('myGenerateD3Button');
+    const mySaveButton = document.getElementById('mySaveD3Button');
+
+    let mySession;
+    let myIsProcessing = false;
+    let myLastGeneratedText = '';
+    let myController = null;
+    let myStartTime = 0;
+    let myTimerInterval;
+    
+    // Check if the API is available and set up the session
+    async function mySetupApi() {
+        try {
+            myDiv01.textContent = 'Setting up API session...';
+            const { GoogleGenerativeAI } = await import("https://cdn.jsdelivr.net/npm/@google/generative-ai");
+            const myApiKey = "";
+            const myGenAI = new GoogleGenerativeAI(myApiKey);
+            const myModel = myGenAI.getGenerativeModel({
+                model: "gemini-2.5-flash-preview-05-20",
+            });
+            mySession = myModel;
+            myDiv01.textContent = 'API session ready. Enter a prompt or select a node.';
+        } catch (error) {
+            myDiv01.textContent = `Error setting up API: ${error.message}`;
+        }
+    }
+    mySetupApi();
+
+    // The main update function for the graph
+    function myUpdate(source) {
+        myNodes = myRootNode.descendants();
+        myLinks = myRootNode.links();
+
+        // Update the links
+        const link = myG.selectAll(".link")
+            .data(myLinks, d => d.target.id);
+        
+        link.enter().append("path")
+            .attr("class", "link")
+            .attr("d", d3.linkVertical().x(d => d.x).y(d => d.y));
+
+        link.attr("d", d3.linkVertical().x(d => d.x).y(d => d.y));
+        link.exit().remove();
+
+        // Update the line labels
+        const myLinkLabel = myG.selectAll(".link-text")
+            .data(myLinksData);
+
+        myLinkLabel.enter().append("text")
+            .attr("class", "link-text")
+            .attr("x", d => (myRootNode.descendants().find(n => n.id === d.source).x + myRootNode.descendants().find(n => n.id === d.target).x) / 2)
+            .attr("y", d => (myRootNode.descendants().find(n => n.id === d.source).y + myRootNode.descendants().find(n => n.id === d.target).y) / 2)
+            .text(d => d.label);
+        
+        myLinkLabel.attr("x", d => (myRootNode.descendants().find(n => n.id === d.source).x + myRootNode.descendants().find(n => n.id === d.target).x) / 2)
+            .attr("y", d => (myRootNode.descendants().find(n => n.id === d.source).y + myRootNode.descendants().find(n => n.id === d.target).y) / 2);
+        myLinkLabel.exit().remove();
+
+        // Update the nodes
+        const node = myG.selectAll(".node")
+            .data(myNodes, d => d.id);
+        
+        const nodeEnter = node.enter().append("g")
+            .attr("class", "node")
+            .attr("transform", d => `translate(${source.x0 || source.x}, ${source.y0 || source.y})`)
+            .on("click", (event, d) => {
+                event.stopPropagation();
+                myToggleNodeSelection(d);
+            })
+            .call(d3.drag()
+                .on("start", myDragStarted)
+                .on("drag", myDragging)
+                .on("end", myDragEnded));
+        
+        nodeEnter.append("circle")
+            .attr("r", 0);
+
+        nodeEnter.append("text")
+            .attr("dy", "-1.5em")
+            .text(d => d.data.name);
+
+        node.merge(nodeEnter)
+            .transition()
+            .duration(myDuration)
+            .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+        node.merge(nodeEnter).select("circle")
+            .attr("r", myNodeRadius)
+            .attr("fill", "#69b3a2")
+            .attr("stroke", "#333");
+            
+        node.exit().transition().duration(myDuration)
+            .attr("transform", d => `translate(${source.x}, ${source.y})`)
+            .remove();
+
+        // Store old positions for transition
+        myNodes.forEach(d => {
+            d.x0 = d.x;
+            d.y0 = d.y;
+        });
+
+        // Add tooltips
+        nodeEnter.append("title")
+            .text(d => `Name: ${d.data.name}\nFact: ${d.data.fact || "N/A"}`);
+    }
+
+    // Function to handle the LLM API stream
+    async function myToggleStream() {
+        if (myStreamButton.textContent === 'Stop' && myController) {
+            myController.abort();
+            return;
+        }
+
+        if (myIsProcessing) return;
+
+        myResetStreamState();
+        
+        let myPrompt;
+        if (mySelectedNodes.length === 1) {
+            const mySelectedNode = mySelectedNodes[0];
+            myPrompt = `Generate a single JSON object about children of "${mySelectedNode.data.name}". The object must contain two top-level keys: "nodes" and "links". The "nodes" value must be an array of objects, each with "id" (a unique ordered number), "parentId" (the ID of the parent node, which is "${mySelectedNode.id}"), "name" (a descriptive string), and "fact" (a string containing a brief interesting fact about the node). The "links" value must be an empty array []. Do not include any text outside of the JSON object.`;
+            myUnselectAllNodes(); // Unselect the node after using it
+        } else {
+            myPrompt = myInputPrompt.value.trim();
+            if (!myPrompt) {
+                myOutput.value = 'Please enter a prompt or select a node.';
+                myDiv01.textContent = '...';
+                return;
+            }
+        }
+
+        if (!mySession) {
+            myOutput.value = 'Please load the model first.';
+            myDiv01.textContent = '...';
+            return;
+        }
+
+        myStreamButton.textContent = 'Stop';
+        mySaveButton.disabled = true;
+        myStartTime = Date.now();
+        myTimerInterval = setInterval(myUpdateTimerDisplay, 100);
+        myController = new AbortController();
+
+        try {
+            myIsProcessing = true;
+            const myStream = await mySession.promptStreaming(myPrompt, {
+                signal: myController.signal,
+                outputLanguage: 'en'
+            });
+
+            for await (const myChunk of myStream) {
+                myLastGeneratedText += myChunk;
+                myOutput.value = myLastGeneratedText;
+                myOutput.scrollTop = myOutput.scrollHeight;
+            }
+
+            const myStartIndex = myLastGeneratedText.indexOf('{');
+            const myEndIndex = myLastGeneratedText.lastIndexOf('}');
+            if (myStartIndex !== -1 && myEndIndex !== -1) {
+                const mySanitizedText = myLastGeneratedText.substring(myStartIndex, myEndIndex + 1);
+                try {
+                    const myGeneratedJSON = JSON.parse(mySanitizedText);
+                    myAddGeneratedNodes(myGeneratedJSON.nodes);
+                } catch (e) {
+                    myDiv01.textContent = `Error: Generated output is not valid JSON. ${e.message}`;
+                }
+            }
+        } catch (myError) {
+            if (myError.name === 'AbortError') {
+                myDiv01.textContent = 'Streaming stopped by user.';
+            } else {
+                myOutput.value = `Error streaming prompt: ${myError.message}`;
+            }
+        } finally {
+            clearInterval(myTimerInterval);
+            const myEndTime = Date.now();
+            const myDurationSeconds = (myEndTime - myStartTime) / 1000;
+            const myCharCount = myLastGeneratedText.length;
+            const myWordCount = myLastGeneratedText.split(/\s+/).filter(myWord => myWord.length > 0).length;
+            const myCharsPerSecond = myDurationSeconds > 0 ? (myCharCount / myDurationSeconds).toFixed(2) : '0.00';
+            const myWordsPerSecond = myDurationSeconds > 0 ? (myWordCount / myDurationSeconds).toFixed(2) : '0.00';
+            myDiv01.innerHTML =
+                `Completed in ${myDurationSeconds.toFixed(2)}s<br>` +
+                `Chars: ${myCharCount} (${myCharsPerSecond}/s)<br>` +
+                `Words: ${myWordCount} (${myWordsPerSecond}/s)`;
+            myStreamButton.textContent = 'Generate Node';
+            myStreamButton.disabled = false;
+            mySaveButton.disabled = false;
+            myIsProcessing = false;
+            myController = null;
+        }
+    }
+
+    function myAddGeneratedNodes(newNodes) {
+        if (!myRootNode) return;
+        const myCurrentRawData = myRootNode.descendants().map(d => d.data);
+        newNodes.forEach(newNode => {
+            const myParentNode = myRootNode.descendants().find(d => d.id === newNode.parentId);
+            if (myParentNode) {
+                const myNewId = (myLastNodeId++).toString();
+                const myNewDataPoint = {
+                    id: myNewId,
+                    parentId: newNode.parentId,
+                    name: newNode.name,
+                    fact: newNode.fact || "",
+                };
+                myCurrentRawData.push(myNewDataPoint);
+            } else {
+                console.warn(`Parent node with ID ${newNode.parentId} not found for new node ${newNode.id}. Skipping.`);
+            }
+        });
+        myRawData = myCurrentRawData;
+        myRootNode = d3.stratify()
+            .id(d => d.id)
+            .parentId(d => d.parentId)(myRawData);
+        myTreeLayout(myRootNode);
+        myUpdate(myRootNode);
+    }
+
+    // Helper functions for the LLM stream
+    function myResetStreamState() {
+        myLastGeneratedText = '';
+        myOutput.value = '';
+        myDiv01.textContent = 'Processing...';
+        myStreamButton.disabled = true;
+    }
+
+    function myUpdateTimerDisplay() {
+        const myElapsedTime = (Date.now() - myStartTime) / 1000;
+        myDiv01.textContent = `Streaming... ${myElapsedTime.toFixed(1)}s`;
+    }
+
+    // Drag functionality
+    function myDragStarted(event, d) {
+        if (!event.active) d3.select(this).raise().classed("active", true);
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function myDragging(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+        d3.select(this).attr("transform", `translate(${d.fx}, ${d.fy})`);
+    }
+
+    function myDragEnded(event, d) {
+        if (!event.active) d3.select(this).classed("active", false);
+        d.fx = null;
+        d.fy = null;
+    }
+
+    // Dialog functionality
+    function myShowNodeDialog(d) {
+        const myNodeDialog = document.getElementById('myNodeDialog');
+        const myOverlay = document.getElementById('myOverlay');
+        const myParentSelect = document.getElementById('myNewNodeParent');
+        
+        myParentSelect.innerHTML = '';
+        myRootNode.descendants().forEach(node => {
+            const option = document.createElement('option');
+            option.value = node.id;
+            option.textContent = node.data.name;
+            myParentSelect.appendChild(option);
+        });
+
+        if (d) {
+            myParentSelect.value = d.id;
+        }
+
+        myNodeDialog.style.display = 'flex';
+        myOverlay.style.display = 'block';
+    }
+
+    function myHideNodeDialog() {
+        document.getElementById('myNodeDialog').style.display = 'none';
+        document.getElementById('myOverlay').style.display = 'none';
+        document.getElementById('myNewNodeName').value = '';
+        document.getElementById('myNewNodeFact').value = '';
+    }
+
+    function myAddNode() {
+        const myNodeName = document.getElementById('myNewNodeName').value;
+        const myNodeFact = document.getElementById('myNewNodeFact').value;
+        const myParentId = document.getElementById('myNewNodeParent').value;
+        
+        if (myNodeName && myParentId) {
+            const myNewId = (myLastNodeId++).toString();
+            myRawData.push({ id: myNewId, name: myNodeName, parentId: myParentId, fact: myNodeFact });
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
+            myTreeLayout(myRootNode);
+            myUpdate(myRootNode);
+            myHideNodeDialog();
+        } else {
+            myShowToast("Please enter a node name and select a parent.");
+        }
+    }
+
+    function myShowAddLineDialog() {
+        const myLineDialog = document.getElementById('myLineDialog');
+        const myOverlay = document.getElementById('myOverlay');
+        const myStartSelect = document.getElementById('myStartNodeSelect');
+        const myEndSelect = document.getElementById('myEndNodeSelect');
+
+        myStartSelect.innerHTML = '';
+        myEndSelect.innerHTML = '';
+        myRootNode.descendants().forEach(node => {
+            const startOption = document.createElement('option');
+            startOption.value = node.id;
+            startOption.textContent = node.data.name;
+            myStartSelect.appendChild(startOption);
+
+            const endOption = document.createElement('option');
+            endOption.value = node.id;
+            endOption.textContent = node.data.name;
+            myEndSelect.appendChild(endOption);
+        });
+
+        myLineDialog.style.display = 'flex';
+        myOverlay.style.display = 'block';
+    }
+
+    function myHideLineDialog() {
+        document.getElementById('myLineDialog').style.display = 'none';
+        document.getElementById('myOverlay').style.display = 'none';
+        document.getElementById('myLineLabel').value = '';
+    }
+
+    function myAddLine() {
+        const myStartNodeId = document.getElementById('myStartNodeSelect').value;
+        const myEndNodeId = document.getElementById('myEndNodeSelect').value;
+        const myLineLabel = document.getElementById('myLineLabel').value;
+        
+        if (myStartNodeId && myEndNodeId) {
+            myLinksData.push({ source: myStartNodeId, target: myEndNodeId, label: myLineLabel });
+            myUpdate(myRootNode);
+            myHideLineDialog();
+        } else {
+            myShowToast("Please select both start and end nodes.");
+        }
+    }
+
+    // Save and Load functionality
+    function mySaveData() {
+        const myData = {
+            nodes: myRawData,
+            links: myLinksData
+        };
+        const myJsonData = JSON.stringify(myData, null, 2);
+        const myBlob = new Blob([myJsonData], { type: 'application/json' });
+        const myUrl = URL.createObjectURL(myBlob);
+        const myLink = document.createElement('a');
+        myLink.href = myUrl;
+        myLink.download = 'graph.json';
+        document.body.appendChild(myLink);
+        myLink.click();
+        document.body.removeChild(myLink);
+        URL.revokeObjectURL(myUrl);
+        myShowToast("Graph saved as graph.json");
+    }
+
+    function myLoadJsonFile(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    if (loadedData.nodes && Array.isArray(loadedData.nodes)) {
+                        myRawData = loadedData.nodes;
+                        myLinksData = loadedData.links || [];
+                        myRootNode = d3.stratify()
+                            .id(d => d.id)
+                            .parentId(d => d.parentId)(myRawData);
+                        myTreeLayout(myRootNode);
+                        myUpdate(myRootNode);
+                        myLastNodeId = d3.max(myRawData, d => parseInt(d.id)) + 1;
+                        myShowToast("Graph loaded successfully!");
+                    } else {
+                        myShowToast("Invalid JSON file format. Missing 'nodes' array.");
+                    }
+                } catch (error) {
+                    myShowToast("Error parsing JSON file: " + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    // UI Helpers
+    function myShowToast(message) {
+        const myToast = document.getElementById('myToastMessage');
+        myToast.textContent = message;
+        myToast.style.display = 'block';
+        setTimeout(() => {
+            myToast.style.opacity = 1;
+        }, 10);
+        setTimeout(() => {
+            myToast.style.opacity = 0;
+        }, 3000);
+        setTimeout(() => {
+            myToast.style.display = 'none';
+        }, 3500);
+    }
+
+    function myFitToScreen() {
+        const myBounds = myG.node().getBBox();
+        const myDx = myBounds.x + myBounds.width / 2;
+        const myDy = myBounds.y + myBounds.height / 2;
+        const myScale = Math.min(myWidth / myBounds.width, myHeight / myBounds.height);
+        mySvg.transition().duration(750).call(
+            myZoom.transform,
+            d3.zoomIdentity
+                .translate(myWidth / 2, myHeight / 2)
+                .scale(myScale * 0.9)
+                .translate(-myDx, -myDy)
+        );
+        myShowToast("Graph has been fitted to the screen.");
+    }
+
+    function myTidyUpGraph() {
+        myTreeLayout(myRootNode);
+        myUpdate(myRootNode);
+        myShowToast("Graph has been tidied up.");
+    }
+
+    // Node selection
+    function myToggleNodeSelection(d) {
+        const myIndex = mySelectedNodes.indexOf(d);
+        if (myIndex > -1) {
+            mySelectedNodes.splice(myIndex, 1);
+        } else {
+            mySelectedNodes.push(d);
+        }
+        d3.selectAll('.node circle').each(function(nodeData) {
+            if (mySelectedNodes.includes(nodeData)) {
+                d3.select(this).classed('selected', true);
+            } else {
+                d3.select(this).classed('selected', false);
+            }
+        });
+    }
+
+    function myUnselectAllNodes() {
+        mySelectedNodes = [];
+        d3.selectAll('.node circle').classed('selected', false);
+    }
+    
+    // Initial draw
+    myUpdate(myRootNode);
+</script>
+
+</body>
+</html>
