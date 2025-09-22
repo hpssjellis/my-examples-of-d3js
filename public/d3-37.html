@@ -653,7 +653,7 @@
 
                 document.getElementById('myNewNodeFact').value = ''
                 myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'))
-                
+                myAddNewNode()
             }
              // document.getElementById('myNewNodeName').value = '';
             //  document.getElementById('myNewNodeParentId').value = '';
@@ -674,7 +674,7 @@ async function myGenerateFact(myInData, myOutFact) {
     const myPrompt = `Generate one short, interesting, and concise fact about ${myNodeName}. Do not include any text other than the fact itself.`;
 
     const myNewNodeFactInput = myOutFact
-    myNewNodeFactInput.value = 'Generating fact...';
+    myNewNodeFactInput.value = 'Generating ...';
     myNewNodeFactInput.disabled = true;
 
     try {
