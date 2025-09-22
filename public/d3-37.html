@@ -503,8 +503,8 @@
                     if (d.data.fact) {
                         myFactDisplayArea.value = d.data.fact;
                         myFactDialog.style.display = "block";
-                        myFactDialog.style.left = (event.pageX + 10) + 'px';
-                        myFactDialog.style.top = (event.pageY - myFactDialog.offsetHeight - 10) + 'px';
+                       // myFactDialog.style.left = (event.pageX + 10) + 'px';
+                      // myFactDialog.style.top = (event.pageY - myFactDialog.offsetHeight - 10) + 'px';
                     }
                 })
                 .on("mouseout", (event) => {
@@ -578,7 +578,7 @@
             mySelectedNodes = [];
         }
         function myShowMessage(message) {
-            document.getElementById("myFactDisplayArea").value = message;
+          //  document.getElementById("myFactDisplayArea").value = message;
             document.getElementById("myDiv01").value = message;
             
         }
@@ -646,7 +646,7 @@
            // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
                 // generate the name and the facts. possibly two calls to the llm
-                alet('not yet')
+                alert('not yet')
             }
             else {
                // easier just generate the fact based on the node name 
