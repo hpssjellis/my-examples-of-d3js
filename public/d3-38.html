@@ -645,8 +645,7 @@
         function myAddGenerateNode() {
            // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
-
-
+/*
 const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
 const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
 
@@ -660,7 +659,7 @@ if (myParentNode) {
     myShowMessage(`Error: Parent node with ID "${myNewNodeParentId}" not found.`);
 }
 
-
+*/
 
                 
                 // generate the name and the facts. possibly two calls to the llm
@@ -678,10 +677,9 @@ const myParentNodeName = myParentNode.data.name;
               console.log('document.getElementById(myNewNodeParentId).value')
               console.log(document.getElementById('myNewNodeParentId').value)
               
-              console.log('myParentNodeName')
-              console.log(myParentNodeName)
+
               
-               const myPrompt = `Generate a one or two word sub concept of the term  ${myParentNodeName}. `;
+               const myPrompt = `Generate a one or two word sub concept for the term  ${document.getElementById('myNewNodeParentId').value}. `;
                 myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
             }
             else {
