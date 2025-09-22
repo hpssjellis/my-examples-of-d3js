@@ -348,6 +348,32 @@
             myMakeDraggable("myAddNodeDialog", "myAddNodeDialog h3");
             myMakeDraggable("myAddLineDialog", "myAddLineDialog h3");
         };
+function myMakeDraggable(dialogId, headerSelector) {
+    const myDialog = document.getElementById(dialogId);
+    const myHeader = myDialog.querySelector(headerSelector);
+    if (!myHeader) {
+        console.error(`Error: Header with selector '${headerSelector}' not found in dialog with ID '${dialogId}'.`);
+        return;
+    }
+    myHeader.onmousedown = (e) => {
+        e.preventDefault();
+        let myOffsetX = e.clientX - myDialog.offsetLeft;
+        let myOffsetY = e.clientY - myDialog.offsetTop;
+        function myMouseMove(e) {
+            myDialog.style.top = (e.clientY - myOffsetY) + 'px';
+            myDialog.style.left = (e.clientX - myOffsetX) + 'px';
+        }
+        function myMouseUp() {
+            window.removeEventListener('mousemove', myMouseMove);
+            window.removeEventListener('mouseup', myMouseUp);
+        }
+        window.addEventListener('mousemove', myMouseMove);
+        window.addEventListener('mouseup', myMouseUp);
+    };
+}
+
+/*
+        
         function myMakeDraggable(dialogId, headerId) {
             const myDialog = document.getElementById(dialogId);
             const myHeader = myDialog.querySelector(headerId);
@@ -367,6 +393,9 @@
                 window.addEventListener('mouseup', myMouseUp);
             };
         }
+*/
+
+        
         function myZoomed(event) {
             mySvg.attr("transform", event.transform);
         }
