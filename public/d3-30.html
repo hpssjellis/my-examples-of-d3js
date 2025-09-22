@@ -555,6 +555,58 @@
                 myShowMessage("Please select ONLY one node to add a child node to.");
             }
         }
+
+
+        function myAddNewNode() {
+    const myNewNodeName = document.getElementById('myNewNodeName').value;
+    const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+    const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+    if (!myNewNodeName || !myNewNodeParentId) {
+        myShowMessage("Node Name and Parent ID are required.");
+        return;
+    }
+    const myRawData = myRootNode.descendants().map(d => d.data);
+    const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+    if (!myParentNode) {
+        myShowMessage("Parent node not found with the given ID.");
+        return;
+    }
+    const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
+    const myNewDataPoint = {
+        id: myNewNodeId,
+        parentId: myNewNodeParentId,
+        name: myNewNodeName,
+        fact: myNewNodeFact || ""
+    };
+    myRawData.push(myNewDataPoint);
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+    myTreeLayout(myRootNode);
+    myRootNode.descendants().forEach(d => {
+        const oldPos = myCurrentPositions.get(d.id);
+        if (oldPos) {
+            d.x = oldPos.x;
+            d.y = oldPos.y;
+        }
+    });
+
+    // ✨ Fix: Set the initial position of the new node to its parent's position.
+    const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
+    if (myNewNode) {
+        myNewNode.x = myParentNode.x;
+        myNewNode.y = myParentNode.y;
+        myNewNode.x0 = myParentNode.x;
+        myNewNode.y0 = myParentNode.y;
+    }
+
+    myUpdate(myRootNode);
+    document.getElementById('myAddNodeDialog').style.display = 'none';
+    myUnselectAllNodes();
+    myShowMessage(`Added new node "${myNewNodeName}".`);
+}
+        /*
         function myAddNewNode() {
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
@@ -594,6 +646,8 @@
             myUnselectAllNodes();
             myShowMessage(`Added new node "${myNewNodeName}".`);
         }
+
+        */
         function myShowAddLineDialog() {
             if (mySelectedNodes.length < 2) {
                 myShowMessage("Please select at least two nodes to add a line.");
