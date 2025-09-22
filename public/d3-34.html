@@ -108,7 +108,8 @@
         }
         .my-movable-dialog textarea {
             width: calc(100% - 20px);
-            resize: vertical;
+            resize: both;
+            overflow: auto; /* Adds scrollbars if content overflows */
         }
         .node.selected circle {
             fill: crimson !important;
@@ -614,7 +615,7 @@
 
        // for the popup to generate facts.
         function myAddGenerateNode() {
-            alert(document.getElementById('myNewNodeParentId').value)
+           // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
                 // generate the name and the facts. possibly two calls to the llm
                 
@@ -623,14 +624,14 @@
                // easier just generate the fact based on the node name 
 
                 document.getElementById('myNewNodeFact').value = ''
-                myGenerateFact(document.getElementById('myNewNodeName').value)
+                myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact').value)
                 
             }
              // document.getElementById('myNewNodeName').value = '';
             //  document.getElementById('myNewNodeParentId').value = '';
             //  document.getElementById('myNewNodeFact').value = '';
         }
-async function myGenerateFact(myInData) {
+async function myGenerateFact(myInData, myOutFact) {
     if (mySelectedNodes.length !== 1) {
         myShowMessage("Please select a single node to generate a fact for.");
         return;
@@ -644,7 +645,7 @@ async function myGenerateFact(myInData) {
     const myNodeName = myInData
     const myPrompt = `Generate one short, interesting, and concise fact about ${myNodeName}. Do not include any text other than the fact itself.`;
 
-    const myNewNodeFactInput = document.getElementById('myNewNodeFact');
+    const myNewNodeFactInput = myOutFact
     myNewNodeFactInput.value = 'Generating fact...';
     myNewNodeFactInput.disabled = true;
 
