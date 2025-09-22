@@ -653,19 +653,22 @@ Access the Name Property: Once you have the parent node object, you can directly
 const myParentNodeName = myParentNode.data.name;
 
               */
+              const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+              const myParentNodeName = myParentNode.data.name;
 
+                
               console.log('document.getElementById(myNewNodeParentId).value')
               console.log(document.getElementById('myNewNodeParentId').value)
               
-              console.log('document.getElementById(myNewNodeParentId).data.name')
-              console.log(document.getElementById('myNewNodeParentId').data.name)
+              console.log('myParentNodeName')
+              console.log(myParentNodeName)
               
-               const myPrompt = `Generate a one or two word sub concept of the term  ${myNodeName}. `;
+               const myPrompt = `Generate a one or two word sub concept of the term  ${myParentNodeName}. `;
                 myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
             }
             else {
                // easier just generate the fact based on the node name 
-                 const myPrompt = `Generate one short, interesting, and concise fact about ${myNodeName}. Do not include any text other than the fact itself.`;
+                 const myPrompt = `Generate one short, interesting, and concise fact about ${document.getElementById('myNewNodeName').value}. Do not include any text other than the fact itself.`;
 
                 document.getElementById('myNewNodeFact').value = ''
                 myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'), myPrompt)
