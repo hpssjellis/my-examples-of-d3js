@@ -150,6 +150,7 @@
         <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
         <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
         <button class="myD3Button" onclick="myAddNewNode()">Add</button>
+        <button class="myD3Button" onclick="myAddGenerateNode()">Generate</button>
         <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
     </div>
     <div id="myAddLineDialog" class="my-movable-dialog">
@@ -609,6 +610,11 @@
             document.getElementById('myAddNodeDialog').style.display = 'none';
             myUnselectAllNodes();
             myShowMessage(`Added new node "${myNewNodeName}".`);
+        }
+
+
+        function myAddGenerateNode() {
+            alet('generate')
         }
         function myShowAddLineDialog() {
             if (mySelectedNodes.length < 2) {
