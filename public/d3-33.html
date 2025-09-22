@@ -86,10 +86,12 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             padding: 10px;
             border-radius: 5px;
-            top: 200px;
+            top: 700px;
             left: 50%;
             transform: translateX(-50%);
             display: none;
+            resize: both; /* Allows the user to resize the dialog */
+            overflow: auto; /* Adds scrollbars if content overflows */
         }
         .my-movable-dialog-header {
             cursor: grab;
