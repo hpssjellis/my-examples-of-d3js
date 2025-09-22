@@ -645,7 +645,8 @@
            // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
                 // generate the name and the facts. possibly two calls to the llm
-                alert('not yet')
+                //alert('not yet')
+                myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'))
             }
             else {
                // easier just generate the fact based on the node name 
