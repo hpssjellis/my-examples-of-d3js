@@ -18,12 +18,12 @@
             <button id="myStreamButton" onclick="myToggleStream()" class="my-button my-stream-button">Generate Graph</button>
             <button id="mySaveButton" onclick="mySaveJSONFile()" class="my-button my-save-button" disabled>Save Output JSON</button>
 
-        
-        <textarea id="myInputPrompt" class="my-textarea" rows="4" placeholder="Type your prompt here...">Generate a single JSON object about animals. The object must contain two top-level keys: "nodes" and "links". The "nodes" value must be an array of objects, each with "id" (a unique ordered number), "parentId" (a string corresponding to its parent's id, or an empty string for the root node which in this cass will have the name "animals"), "name" (a descriptive string), and "fact" (a string containing a brief interesting fact about the node). The "links" value must be an empty array []. Do not include any text outside of the JSON object.</textarea>
-        
+        <br>
+        <textarea id="myInputPrompt" class="my-textarea" rows="4" Cols="120" placeholder="Type your prompt here...">Generate a single JSON object about animals. The object must contain two top-level keys: "nodes" and "links". The "nodes" value must be an array of objects, each with "id" (a unique ordered number), "parentId" (a string corresponding to its parent's id, or an empty string for the root node which in this cass will have the name "animals"), "name" (a descriptive string), and "fact" (a string containing a brief interesting fact about the node). The "links" value must be an empty array []. Do not include any text outside of the JSON object.</textarea>
+        <br>
         <div id="myDiv01" class="my-status">...</div>
         
-        <textarea id="myOutput" class="my-textarea my-output" rows="10" readonly></textarea>
+        <textarea id="myOutput" class="my-textarea my-output" rows="10" Cols="120" readonly></textarea>
 
 
     <hr>
