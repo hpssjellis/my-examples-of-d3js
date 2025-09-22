@@ -612,9 +612,22 @@
             myShowMessage(`Added new node "${myNewNodeName}".`);
         }
 
-
+       // for the popup to generate facts.
         function myAddGenerateNode() {
             alert(document.getElementById('myNewNodeParentId').value)
+            if (document.getElementById('myNewNodeName').value === ''){
+                // generate the name and the facts. possibly two calls to the llm
+                
+            }
+            else {
+               // easier just generate the fact based on the node name 
+                let myInData = document.getElementById('myNewNodeName').value
+                document.getElementById('myNewNodeFact').value = ''
+                
+            }
+             // document.getElementById('myNewNodeName').value = '';
+            //  document.getElementById('myNewNodeParentId').value = '';
+            //  document.getElementById('myNewNodeFact').value = '';
         }
         function myShowAddLineDialog() {
             if (mySelectedNodes.length < 2) {
