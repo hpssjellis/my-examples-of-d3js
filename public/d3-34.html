@@ -89,7 +89,7 @@
             bottom: 20px; /* Position from the bottom */
             right: 20px; /* Position from the right */
             transform: translateX(-50%);
-            display: block;
+            display: none;
             resize: both; /* Allows the user to resize the dialog */
             overflow: auto; /* Adds scrollbars if content overflows */
         }
@@ -137,7 +137,7 @@
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
     <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
     <svg id="mySvgContainer"></svg>
-    <div id="myFactDialog" class="my-movable-dialog">
+    <div id="myFactDialog" class="my-movable-dialog" style="display:block;">
         <div class="my-movable-dialog-header">
             Node Fact
         </div>
