@@ -475,6 +475,121 @@ function myUpdate(source) {
 }
 
 
+
+      // Function to show the "Add New Node" dialog and pre-fill fields
+function myShowAddNodeDialog() {
+    if (mySelectedNodes.length === 1) {
+        document.getElementById('myNewNodeParentId').value = mySelectedNodes[0].id;
+        document.getElementById('myNewNodeName').value = "";
+        document.getElementById('myNewNodeFact').value = "";
+        document.getElementById('myAddNodeDialog').style.display = 'flex';
+    } else if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select a single node to be the parent of the new node.");
+    } else {
+        myShowMessage("Please select ONLY one node to add a child node to.");
+    }
+}
+
+// Function to add a new node
+function myAddNewNode() {
+    const myNewNodeName = document.getElementById('myNewNodeName').value;
+    const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+    const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+    
+    if (!myNewNodeName || !myNewNodeParentId) {
+        myShowMessage("Node Name and Parent ID are required.");
+        return;
+    }
+
+    const myRawData = myRootNode.descendants().map(d => d.data);
+    const myParentNodeData = myRawData.find(d => d.id === myNewNodeParentId);
+    if (!myParentNodeData) {
+        myShowMessage("Parent node not found with the given ID.");
+        return;
+    }
+
+    const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
+    const myNewDataPoint = {
+        id: myNewNodeId,
+        parentId: myNewNodeParentId,
+        name: myNewNodeName,
+        fact: myNewNodeFact || ""
+    };
+
+    myRawData.push(myNewDataPoint);
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+    
+    myTreeLayout(myRootNode);
+    myRootNode.descendants().forEach(d => {
+        const oldPos = myCurrentPositions.get(d.id);
+        if (oldPos) {
+            d.x = oldPos.x;
+            d.y = oldPos.y;
+        }
+    });
+    myUpdate(myRootNode);
+    
+    document.getElementById('myAddNodeDialog').style.display = 'none';
+    myUnselectAllNodes();
+    myShowMessage(`Added new node "${myNewNodeName}".`);
+}
+
+// Function to show the "Add New Line" dialog
+function myShowAddLineDialog() {
+    if (mySelectedNodes.length < 2) {
+        myShowMessage("Please select at least two nodes to add a line.");
+        return;
+    }
+    document.getElementById('myAddLineDialog').style.display = 'flex';
+}
+
+// Function to add a new line between selected nodes
+function myAddLineWithFact() {
+    const myJoiningFact = document.getElementById('myJoiningFact').value;
+
+    if (mySelectedNodes.length < 2) {
+        myShowMessage("Please select at least two nodes.");
+        return;
+    }
+
+    const mySourceNode = mySelectedNodes[0];
+    const myTargetNodes = mySelectedNodes.slice(1);
+
+    for (const myTargetNode of myTargetNodes) {
+        if (mySourceNode.id === myTargetNode.id) continue;
+        
+        const myExistingLink = myArbitraryLinks.find(
+            link => (link.sourceId === mySourceNode.id && link.targetId === myTargetNode.id) ||
+                    (link.sourceId === myTargetNode.id && link.targetId === mySourceNode.id)
+        );
+        if (myExistingLink) continue;
+
+        myArbitraryLinks.push({ 
+            sourceId: mySourceNode.id, 
+            targetId: myTargetNode.id,
+            joiningFact: myJoiningFact
+        });
+    }
+
+    myUpdate(myRootNode);
+
+    document.getElementById('myAddLineDialog').style.display = 'none';
+    document.getElementById('myJoiningFact').value = '';
+    myUnselectAllNodes();
+    myShowMessage(`Added a new line.${myJoiningFact ? ` with fact: "${myJoiningFact}"` : ""}`);
+}
+
+// Function to unselect all nodes
+function myUnselectAllNodes() {
+    d3.selectAll('.node.selected')
+        .classed('selected', false)
+        .select("circle").style("fill", "#69a3b2");
+    mySelectedNodes = [];
+}
+
       /*
       function myUpdate(source) {
     const myNodeData = myRootNode.descendants();
@@ -692,6 +807,8 @@ function myClickNode(event, d) {
     }
 }
 
+
+      /*
 // Function to unselect all nodes
 function myUnselectAllNodes() {
     d3.selectAll('.node.selected')
@@ -700,6 +817,8 @@ function myUnselectAllNodes() {
     mySelectedNodes = [];
 }
 
+
+      */
 /*
       
 function myClickNode(event, d) {
@@ -775,6 +894,8 @@ function myClickNode(event, d) {
 
       */
 
+
+      /*
         function myShowAddLineDialog() {
             if (mySelectedNodes.length < 2) {
                 myShowMessage("Please select at least two nodes to add a line.");
@@ -783,6 +904,11 @@ function myClickNode(event, d) {
             document.getElementById('myAddLineDialog').style.display = 'flex';
         }
 
+      */
+
+
+/*
+      
         function myAddLineWithFact() {
             const myJoiningFact = document.getElementById('myJoiningFact').value;
 
@@ -818,6 +944,9 @@ function myClickNode(event, d) {
             myShowMessage(`Added a new line.${myJoiningFact ? ` with fact: "${myJoiningFact}"` : ""}`);
         }
 
+
+
+      */
         function myShowMessage(message) {
             document.getElementById("myFactDisplayArea").value = message;
         }
@@ -833,6 +962,8 @@ function myClickNode(event, d) {
             }
         }
 
+
+      /*
         function myAddNewNode() {
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
@@ -881,6 +1012,8 @@ function myClickNode(event, d) {
             myUnselectAllNodes();
         }
 
+
+      */
         function myLoadFile(event) {
             const myFile = event.target.files[0];
             if (!myFile) {
