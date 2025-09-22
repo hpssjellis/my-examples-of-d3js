@@ -645,6 +645,24 @@
         function myAddGenerateNode() {
            // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
+
+
+const myNewNodeParentId = document.getElementById(myNewNodeParentId).value;
+const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+
+// Add a check to ensure myParentNode is not undefined
+if (myParentNode) {
+    const myParentNodeName = myParentNode.data.name;
+    // Now you can safely use myParentNodeName
+    myShowMessage(`The selected parent node is: ${myParentNodeName}`);
+} else {
+    // Handle the case where the parent node was not found
+    myShowMessage(`Error: Parent node with ID "${myNewNodeParentId}" not found.`);
+}
+
+
+
+                
                 // generate the name and the facts. possibly two calls to the llm
                 //alert('not yet')
 /*
@@ -654,8 +672,7 @@ Access the Name Property: Once you have the parent node object, you can directly
 const myParentNodeName = myParentNode.data.name;
 
               */
-              const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
-              const myParentNodeName = myParentNode.data.name;
+
 
                 
               console.log('document.getElementById(myNewNodeParentId).value')
