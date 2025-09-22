@@ -101,6 +101,32 @@
             border-radius: 3px;
             margin-bottom: 10px;
         }
+
+            .my-movable-dialog2 {
+            position: fixed;
+            z-index: 999;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            bottom: 20px; /* Position from the bottom */
+            right: 20px; /* Position from the right */
+            transform: translateX(-50%);
+            display: block;
+            resize: both; /* Allows the user to resize the dialog */
+            overflow: auto; /* Adds scrollbars if content overflows */
+        }
+        .my-movable-dialog-header2 {
+            cursor: grab;
+            padding: 5px;
+            background-color: #ddd;
+            text-align: center;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+
+        
         .my-movable-dialog input, .my-movable-dialog button {
             display: block;
             width: 100%;
@@ -137,11 +163,11 @@
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
     <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
     <svg id="mySvgContainer"></svg>
-    <div id="myFactDialog" class="my-movable-dialog" style="display:block;">
-        <div class="my-movable-dialog-header">
+    <div id="myFactDialog" class="my-movable-dialog2" ">
+        <div class="my-movable-dialog-header2">
             Node Fact
         </div>
-        <textarea id="myFactDisplayArea"  readonly placeholder="Click a node to see its fact."></textarea>
+        <textarea id="myFactDisplayArea"  readonly placeholder="Mouseover a node to see its fact."></textarea>
     </div>
     <div id="myAddNodeDialog" class="my-movable-dialog">
         <div class="my-movable-dialog-header">
