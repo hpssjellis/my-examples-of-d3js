@@ -211,6 +211,7 @@
             }
         }
         async function myToggleStream() {
+          
             if (myStreamButton.textContent === 'Stop' && myController) {
                 myController.abort();
                 return;
@@ -235,7 +236,7 @@
             myController = new AbortController();
             try {
                 myIsProcessing = true;
-                const myStream = await mySession.promptStreaming(myPrompt, { signal: myController.signal });
+                const myStream = await mySession.promptStreaming(myPrompt, { signal: myController.signal, outputLanguage: 'en' });
                 for await (const myChunk of myStream) {
                     myLastGeneratedText += myChunk;
                     myOutput.value = myLastGeneratedText;
