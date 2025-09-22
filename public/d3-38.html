@@ -362,7 +362,8 @@
             links: []
         };
         window.onload = function() {
-            myWidth = 960;
+          //  myWidth = 960;
+            myWidth = document.getElementById('mySvgContainer').parentElement.offsetWidth;
             myHeight = 600;
             myZoomBehavior = d3.zoom().on("zoom", myZoomed);
             mySvg = d3.select("#mySvgContainer")
