@@ -620,13 +620,13 @@
            // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
                 // generate the name and the facts. possibly two calls to the llm
-                
+                alet('not yet')
             }
             else {
                // easier just generate the fact based on the node name 
 
                 document.getElementById('myNewNodeFact').value = ''
-                myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact').value)
+                myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'))
                 
             }
              // document.getElementById('myNewNodeName').value = '';
