@@ -608,6 +608,9 @@
                 myShowMessage("Parent node not found with the given ID.");
                 return;
             }
+            const myParentNodeName = myParentNode.data.name;
+            console.log('myParentNodeName')
+            console.log(myParentNodeName)
             const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
             const myNewDataPoint = {
                 id: myNewNodeId,
