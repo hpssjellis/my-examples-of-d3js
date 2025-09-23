@@ -167,6 +167,7 @@
     <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
     <button class="myD3Button" id="myDeleteD3Button" onclick="myDeleteSelectedNodes()">Delete Node</button>
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
+    <button class="myD3Button" id="myUpdateButton" onclick="myRefreshGraph()">update</button>
    <!-- <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph(document.getElementById('myLayoutSelector').value)">Tidy Up</button>  -->
     <select id="myLayoutSelector" onchange="myChangeLayout()">
         <option value="tree">Tree Layout</option>
@@ -223,6 +224,22 @@
         let myLastGeneratedText = '';
         let myController = null;
         let myIsProcessing = false;
+
+function myRefreshGraph() {
+    // 1. Get the latest raw data from the current graph nodes
+    const myRawData = myRootNode.descendants().map(d => d.data);
+
+    // 2. Re-create the D3.js hierarchy from the latest data
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+
+    myUpdate(myRootNode);
+
+    myShowMessage("Graph refreshed and colors updated.");
+}
+
+        
         function myUpdateTimerDisplay() {
             const myElapsed = (Date.now() - myStartTime) / 1000;
             myDiv01.textContent = `Thinking... ${myElapsed.toFixed(2)}s`;
