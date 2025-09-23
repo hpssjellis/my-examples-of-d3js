@@ -770,6 +770,14 @@ function findHighestIdNumber() {
                 .text(d => d.data.name)
                 .style("fill", "#2c3e50");
             const myNodeUpdate = myNodeEnter.merge(myNode);
+
+            // Add the following line to the merged selection to update the text
+            myNodeUpdate.select("text")
+                .attr("x", d => d.children ? -15 : 15)
+                .attr("text-anchor", d => d.children ? "end" : "start")
+                .text(d => d.data.name); // <-- This is the key line to add
+
+            
             myNodeUpdate.transition()
                 .duration(500)
                 .attr("transform", d => `translate(${d.x},${d.y})`);
