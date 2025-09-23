@@ -751,8 +751,8 @@ async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
 
         // Step 3: Add the new node to the graph
         await myAddNewNode(false); // Pass 'false' to indicate not to close the dialog
-        await nameInput.value = '';
-        await factInput.value = '';
+        nameInput.value = '';
+        factInput.value = '';
     }
 }
       
