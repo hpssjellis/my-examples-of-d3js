@@ -182,6 +182,7 @@
         <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
         <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
         <button class="myD3Button" onclick="myAddGenerateNode()">Generate</button>
+        <input type="number" id="myGenerateLoopNumber" size="5" value="1"> 
         <button class="myD3Button" onclick="myAddNewNode()">Add</button>
         <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
     </div>
@@ -663,6 +664,7 @@
        // for the popup to generate facts.
     async   function myAddGenerateNode() {
            // alert(document.getElementById('myNewNodeParentId').value)
+            let myLoops = document.getElementById('myGenerateLoopNumber').value;   // for how many times to do this.
             if (document.getElementById('myNewNodeName').value === ''){
 
                const myNewNodeParentId = document.getElementById('myNewNodeParentId').value
