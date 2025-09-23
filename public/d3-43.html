@@ -170,8 +170,9 @@
    <!-- <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph(document.getElementById('myLayoutSelector').value)">Tidy Up</button>  -->
     <select id="myLayoutSelector" onchange="myChangeLayout()">
         <option value="tree">Tree Layout</option>
-        <option value="cluster">Cluster Layout</option>
-        <option value="force">Force-Directed Graph</option>
+        <option value="cluster">Cluster Layout</option>      
+        <option value="force">Force-Directed Graph</option>    
+        <option value="radial">Radial</option>    
     </select>
     <svg id="mySvgContainer"></svg>
     <div id="myShowDiv"> ... </div>
@@ -498,7 +499,17 @@ function myTidyUpGraph(layoutType) {
     if (layoutType === 'tree') {
         myTreeLayout = d3.tree().size([myWidth, myHeight - 75]);
         myTreeLayout(myRootNode);
-    } else if (layoutType === 'cluster') {
+    } 
+    else if (layoutType === 'radial') {
+    myTreeLayout = d3.tree().size([2 * Math.PI, Math.min(myWidth, myHeight) / 2]);
+    myTreeLayout(myRootNode);
+    myRootNode.descendants().forEach(d => {
+        d.x = d.y * Math.cos(d.x - Math.PI / 2);
+        d.y = d.y * Math.sin(d.x - Math.PI / 2);
+    });
+}
+    
+    else if (layoutType === 'cluster') {
         myTreeLayout = d3.cluster().size([myWidth, myHeight - 75]);
         myTreeLayout(myRootNode);
     } 
