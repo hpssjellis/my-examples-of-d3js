@@ -688,7 +688,8 @@ const myParentNodeName = myParentNode.data.name;
               console.log('document.getElementById(myNewNodeParentId).value')
               console.log(document.getElementById('myNewNodeParentId').value)
               
-
+            console.log('myParentNodeName')
+            console.log(myParentNodeName)
               
                const myPrompt = `Generate a one or two word sub concept for the term  ${document.getElementById('myNewNodeParentId').value}. `;
                 myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
@@ -825,37 +826,7 @@ function mySaveData() {
     myLink.click();
     document.body.removeChild(myLink);
 }
-        /*
-        function mySaveData() {
-            const mySavedNodes = myRootNode.descendants().map(d => {
-                return {
-                    id: d.id,
-                    parentId: d.parent ? d.parent.id : "",
-                    name: d.data.name,
-                    fact: d.data.fact || "",
-                    x: d.x,
-                    y: d.y
-                };
-            });
-            const myDataToSave = {
-                nodes: mySavedNodes,
-                links: myArbitraryLinks
-            };
-            const myJson = JSON.stringify(myDataToSave, null, 2);
-            document.getElementById("myFactDisplayArea").value = myJson;
-            const myBlob = new Blob([myJson], { type: "application/json" });
-            const myUrl = URL.createObjectURL(myBlob);
-            const myLink = document.createElement("a");
-            myLink.setAttribute("href", myUrl);
-            myLink.setAttribute("download", "d3_graph_data.json");
-            myLink.style.display = "none";
-            document.body.appendChild(myLink);
-            myLink.click();
-            document.body.removeChild(myLink);
-        }
 
-
-        */
     </script>
 </body>
 </html>
