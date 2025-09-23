@@ -654,7 +654,7 @@
         }
 
        // for the popup to generate facts.
-        function myAddGenerateNode() {
+    async   function myAddGenerateNode() {
            // alert(document.getElementById('myNewNodeParentId').value)
             if (document.getElementById('myNewNodeName').value === ''){
 /*
@@ -695,14 +695,14 @@ const myParentNodeName = myParentNode.data.name;
             console.log(myParentNodeName)
               
                const myPrompt = `Generate a one or two word sub concept for the term  ${myParentNodeName}. `;
-                myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
+             await   myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
             }
             else {
                // easier just generate the fact based on the node name 
                  const myPrompt = `Generate one short, interesting, and concise fact about ${document.getElementById('myNewNodeName').value}. Do not include any text other than the fact itself.`;
 
                 document.getElementById('myNewNodeFact').value = ''
-                myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'), myPrompt)
+               await myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'), myPrompt)
                 myAddNewNode()
             }
              // document.getElementById('myNewNodeName').value = '';
