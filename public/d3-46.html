@@ -164,6 +164,7 @@
     <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
     <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
     <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog('')">Add Node</button>
+    <button class="myD3Button" onclick="myEditNode()">Edit Node</button>
     <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
     <button class="myD3Button" id="myDeleteD3Button" onclick="myDeleteSelectedNodes()">Delete Node</button>
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
@@ -204,6 +205,19 @@
         <button class="myD3Button" onclick="myAddLineWithFact()">Add</button>
         <button class="myD3Button" onclick="document.getElementById('myAddLineDialog').style.display = 'none'">Cancel</button>
     </div>
+
+<div id="myEditNodeDialog" class="my-movable-dialog" style="display: none;">
+    <h3>Edit Node</h3>
+    <label for="myEditNodeName">Node Name:</label>
+    <input type="text" id="myEditNodeName" required>
+    
+    <label for="myEditNodeFact">Fact:</label>
+    <textarea id="myEditNodeFact"></textarea>
+    
+    <button class="myD3Button" onclick="mySaveEditedNode()">Save</button>
+    <button class="myD3Button" onclick="document.getElementById('myEditNodeDialog').style.display = 'none'; myUnselectAllNodes();">Cancel</button>
+</div>
+    
     <br><br>
     <footer class="my-footer">
         Use at your own risk.<br>
@@ -225,6 +239,64 @@
         let myController = null;
         let myIsProcessing = false;
 
+
+
+
+function myEditNode() {
+    // Check if exactly one node is selected to be edited.
+    if (mySelectedNodes.length !== 1) {
+        myShowMessage("Please select a single node to edit.");
+        return;
+    }
+
+    const mySelectedNode = mySelectedNodes[0];
+    const myEditDialog = document.getElementById("myEditNodeDialog");
+    const myEditNameInput = document.getElementById("myEditNodeName");
+    const myEditFactInput = document.getElementById("myEditNodeFact");
+
+    // Pre-fill the input fields with the selected node's data.
+    myEditNameInput.value = mySelectedNode.data.name;
+    myEditFactInput.value = mySelectedNode.data.fact || "";
+
+    // Store the node's ID on the dialog for easy access later.
+    myEditDialog.dataset.nodeId = mySelectedNode.id;
+
+    // Display the dialog.
+    myEditDialog.style.display = "block";
+}
+
+
+function mySaveEditedNode() {
+    const myEditDialog = document.getElementById("myEditNodeDialog");
+    const myNodeIdToEdit = myEditDialog.dataset.nodeId;
+    
+    // Find the node in the current graph data using its ID.
+    const myNodeToEdit = myRootNode.descendants().find(d => d.id === myNodeIdToEdit);
+
+    if (!myNodeToEdit) {
+        myShowMessage("Error: Could not find the node to edit.");
+        return;
+    }
+
+    // Get the new name and fact from the input fields.
+    const myNewName = document.getElementById("myEditNodeName").value;
+    const myNewFact = document.getElementById("myEditNodeFact").value;
+
+    // Update the data object.
+    myNodeToEdit.data.name = myNewName;
+    myNodeToEdit.data.fact = myNewFact;
+    
+    // Hide the dialog and unselect all nodes.
+    myEditDialog.style.display = "none";
+    myUnselectAllNodes();
+
+    // Redraw the graph to show the updated name and fact.
+    myUpdate(myRootNode);
+    
+    myShowMessage(`Node "${myNewName}" has been updated.`);
+}
+
+        
 function myCustomLayout() {
     // A constant for vertical spacing. This controls the distance between levels.
     const verticalSpacing = 100;
