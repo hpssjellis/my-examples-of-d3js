@@ -550,7 +550,7 @@ function myTidyUpGraph(layoutType) {
         }
         function myUpdate(source) {
         //    let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
-            let myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#e74c3c']);
+            let myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#800080']);
             const myNodeData = myRootNode.descendants();
             const myTreeLinkData = myRootNode.links();
             const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
