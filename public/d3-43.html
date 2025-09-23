@@ -427,7 +427,36 @@
             mySvg.attr("transform", event.transform);
         }
 
-        function myDeleteSelectedNodes() {
+
+function myDeleteSelectedNodes() {
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
+        return;
+    }
+
+    const myNodesToDelete = new Set();
+    mySelectedNodes.forEach(node => {
+        node.descendants().forEach(d => myNodesToDelete.add(d.id));
+    });
+
+    const myRawData = myRootNode.descendants().map(d => d.data);
+
+    const myFilteredData = myRawData.filter(d => !myNodesToDelete.has(d.id));
+
+    myArbitraryLinks = myArbitraryLinks.filter(link =>
+        !myNodesToDelete.has(link.sourceId) && !myNodesToDelete.has(link.targetId)
+    );
+
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myFilteredData);
+
+    myUpdate(myRootNode);
+    myUnselectAllNodes();
+    myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
+}
+        /*
+    function myDeleteSelectedNodes() {
     if (mySelectedNodes.length === 0) {
         myShowMessage("Please select one or more nodes to delete.");
         return;
@@ -466,6 +495,8 @@
     myShowMessage(`Deleted ${myNodesToDelete.length} node(s) and their descendants.`);
 }
 
+
+        */
  function myChangeLayout() {
     const layoutType = document.getElementById('myLayoutSelector').value;
     myTidyUpGraph(layoutType);
