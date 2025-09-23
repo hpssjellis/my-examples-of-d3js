@@ -380,7 +380,7 @@
                 .append("g");
             mySvg.on("click", myUnselectAllNodes);
             myTreeLayout = d3.tree()
-                .size([myWidth, myHeight - 150]);
+                .size([myWidth, myHeight - 75]);
             myDrawData(myDefaultData);
             myMakeDraggable("myFactDialog", ".my-movable-dialog-header2");
             myMakeDraggable("myAddNodeDialog", ".my-movable-dialog-header");
