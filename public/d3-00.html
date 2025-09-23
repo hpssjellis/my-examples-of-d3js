@@ -112,7 +112,7 @@
             bottom: 20px; /* Position from the bottom */
             right: 20px; /* Position from the right */
            /* transform: translateX(-50%);  */
-            display: block;
+            display: none;   /* lets remove it from view  */
             resize: both; /* Allows the user to resize the dialog */
             overflow: auto; /* Adds scrollbars if content overflows */
         }
@@ -163,11 +163,19 @@
     <input type="file" id="myFileLoad" style="display: none;" onchange="myLoadFile(event)">
     <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
     <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
-    <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog()">Add Node</button>
+    <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog('')">Add Node</button>
     <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
+    <button class="myD3Button" id="myDeleteD3Button" onclick="myDeleteSelectedNodes()">Delete Node</button>
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
-    <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
+   <!-- <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph(document.getElementById('myLayoutSelector').value)">Tidy Up</button>  -->
+    <select id="myLayoutSelector" onchange="myChangeLayout()">
+        <option value="tree">Tree Layout</option>
+        <option value="cluster">Cluster Layout</option>      
+   <!--     <option value="force">Force-Directed Graph</option>  -->  
+        <option value="radial">Radial</option>    
+    </select>
     <svg id="mySvgContainer"></svg>
+    <div id="myShowDiv"> ... </div>
     <div id="myFactDialog" class="my-movable-dialog2" ">
         <div class="my-movable-dialog-header2">
             Node Fact
@@ -181,7 +189,8 @@
         <input type="text" id="myNewNodeName" placeholder="Node Name">
         <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
         <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
-        <button class="myD3Button" onclick="myAddGenerateNode()">Generate</button>
+        <button class="myD3Button" onclick="myAddGenerateNode()">Generate #</button>
+        <input type="number" id="myGenerateLoopNumber" value="1"> 
         <button class="myD3Button" onclick="myAddNewNode()">Add</button>
         <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
     </div>
@@ -380,7 +389,7 @@
                 .append("g");
             mySvg.on("click", myUnselectAllNodes);
             myTreeLayout = d3.tree()
-                .size([myWidth, myHeight - 150]);
+                .size([myWidth, myHeight - 75]);
             myDrawData(myDefaultData);
             myMakeDraggable("myFactDialog", ".my-movable-dialog-header2");
             myMakeDraggable("myAddNodeDialog", ".my-movable-dialog-header");
@@ -417,12 +426,88 @@
         function myZoomed(event) {
             mySvg.attr("transform", event.transform);
         }
-        function myTidyUpGraph() {
-            if (!myRootNode) return;
-            myTreeLayout(myRootNode);
-            myUpdate(myRootNode);
-            myShowMessage("Graph layout has been reset.");
-        }
+
+
+function myDeleteSelectedNodes() {
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
+        return;
+    }
+
+    const myNodesToDelete = new Set();
+    mySelectedNodes.forEach(node => {
+        node.descendants().forEach(d => myNodesToDelete.add(d.id));
+    });
+
+    const myRawData = myRootNode.descendants().map(d => d.data);
+
+    const myFilteredData = myRawData.filter(d => !myNodesToDelete.has(d.id));
+
+    myArbitraryLinks = myArbitraryLinks.filter(link =>
+        !myNodesToDelete.has(link.sourceId) && !myNodesToDelete.has(link.targetId)
+    );
+
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myFilteredData);
+
+    myUpdate(myRootNode);
+    myUnselectAllNodes();
+    myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
+}
+    
+ function myChangeLayout() {
+    const layoutType = document.getElementById('myLayoutSelector').value;
+    myTidyUpGraph(layoutType);
+}
+        const mySimulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(d => d.id))
+    .force("charge", d3.forceManyBody())
+    .force("center", d3.forceCenter(myWidth / 2, myHeight / 2));
+
+        
+function myTidyUpGraph(layoutType) {
+    if (!myRootNode) return;
+    if (layoutType === 'force') {
+        const nodes = myRootNode.descendants();
+        const links = myRootNode.links();
+
+        mySimulation.nodes(nodes).on("tick", () => {
+            // Update node and link positions on each tick
+            mySvg.selectAll(".node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            mySvg.selectAll(".link")
+                .attr("d", d => {
+                    return `M${d.source.x},${d.source.y} L${d.target.x},${d.target.y}`;
+                });
+        });
+
+        mySimulation.force("link").links(links);
+    } else {
+    // Apply the selected layout
+    if (layoutType === 'tree') {
+        myTreeLayout = d3.tree().size([myWidth, myHeight - 75]);
+        myTreeLayout(myRootNode);
+    } 
+    else if (layoutType === 'radial') {
+    myTreeLayout = d3.tree().size([2 * Math.PI, Math.min(myWidth, myHeight) / 2]);
+    myTreeLayout(myRootNode);
+    myRootNode.descendants().forEach(d => {
+        d.x = d.y * Math.cos(d.x - Math.PI / 2);
+        d.y = d.y * Math.sin(d.x - Math.PI / 2);
+    });
+}
+    
+    else if (layoutType === 'cluster') {
+        myTreeLayout = d3.cluster().size([myWidth, myHeight - 75]);
+        myTreeLayout(myRootNode);
+    } 
+    }
+    myUpdate(myRootNode);
+    myShowMessage(`Graph layout has been reset to ${layoutType}.`);
+}
+
         function myFitToScreen() {
             const myNodeElements = d3.selectAll(".node").nodes();
             const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
@@ -464,6 +549,8 @@
             myUpdate(myRootNode);
         }
         function myUpdate(source) {
+        //    let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
+            let myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#e74c3c']);
             const myNodeData = myRootNode.descendants();
             const myTreeLinkData = myRootNode.links();
             const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
@@ -508,8 +595,9 @@
                 .on("mouseover", (event, d) => {
                     d3.select(event.currentTarget).select("circle").style("stroke", "cyan");
                     if (d.data.fact) {
-                        myFactDisplayArea.value = d.data.fact;
-                        myFactDialog.style.display = "block";
+                        document.getElementById("myShowDiv").textContent = d.data.fact;
+                       // myFactDisplayArea.value = d.data.fact;
+                      //  myFactDialog.style.display = "block";
                        // myFactDialog.style.left = (event.pageX + 10) + 'px';
                       // myFactDialog.style.top = (event.pageY - myFactDialog.offsetHeight - 10) + 'px';
                     }
@@ -520,7 +608,7 @@
                 });
             myNodeEnter.append("circle")
                 .attr("r", 10)
-                .style("fill", "#69a3b2")
+                .style("fill", d => myColorScale(d.depth)) // <-- New code
                 .style("stroke", "steelblue")
                 .style("stroke-width", "2px");
             myNodeEnter.append("text")
@@ -572,7 +660,7 @@
                 d3.select(event.currentTarget).classed('selected', true).select("circle").style("fill", "crimson");
                 mySelectedNodes.push(d);
                 if (d.data.fact) {
-                    myShowMessage(d.data.fact);
+                   // myShowMessage(d.data.fact);  // not needed since mouseover does it
                 } else {
                     myShowMessage("No fact available for this node. Use the **Ctrl key** to select multiple nodes for adding a line.");
                 }
@@ -586,11 +674,15 @@
         }
         function myShowMessage(message) {
           //  document.getElementById("myFactDisplayArea").value = message;
-         //   document.getElementById("myDiv01").value = message;
-            console.log(message)
-            
-        }
-        function myShowAddNodeDialog() {
+            document.getElementById("myShowDiv").textContent += message;
+           // console.log(message)
+                // Clear the message after 5 seconds
+            setTimeout(() => {
+                document.getElementById("myShowDiv").textContent = '';
+            }, 5000); // 5000 milliseconds = 5 seconds
+                    
+                }
+        function myShowAddNodeDialog(shouldCloseDialog = true) {
             if (mySelectedNodes.length === 1) {
                 document.getElementById('myNewNodeParentId').value = mySelectedNodes[0].id;
                 document.getElementById('myNewNodeName').value = '';
@@ -602,7 +694,7 @@
                 myShowMessage("Please select ONLY one node to add a child node to.");
             }
         }
-        function myAddNewNode() {
+        function myAddNewNode(shouldCloseDialog = true) {
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
             const myNewNodeFact = document.getElementById('myNewNodeFact').value;
@@ -641,8 +733,8 @@
             });
             const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
             if (myNewNode) {
-                myNewNode.x = myParentNode.x+100;
-                myNewNode.y = myParentNode.y+30;
+                myNewNode.x = myParentNode.x + (Math.random() * 300) - 150;
+                myNewNode.y = myParentNode.y + (Math.random() * 70);
                 myNewNode.x0 = myParentNode.x;
                 myNewNode.y0 = myParentNode.y;
             } else {
@@ -655,67 +747,71 @@
             console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
 
             myUpdate(myRootNode);
-            document.getElementById('myAddNodeDialog').style.display = 'none';
-            myUnselectAllNodes();
+          //  document.getElementById('myAddNodeDialog').style.display = 'none';
+          //  myUnselectAllNodes();
+
+              if (shouldCloseDialog) {
+        document.getElementById('myAddNodeDialog').style.display = 'none';
+    }
             myShowMessage(`Added new node "${myNewNodeName}".`);
         }
 
-       // for the popup to generate facts.
-    async   function myAddGenerateNode() {
-           // alert(document.getElementById('myNewNodeParentId').value)
-            if (document.getElementById('myNewNodeName').value === ''){
-/*
-const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
-const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
 
-// Add a check to ensure myParentNode is not undefined
-if (myParentNode) {
-    const myParentNodeName = myParentNode.data.name;
-    // Now you can safely use myParentNodeName
-    myShowMessage(`The selected parent node is: ${myParentNodeName}`);
-} else {
-    // Handle the case where the parent node was not found
-    myShowMessage(`Error: Parent node with ID "${myNewNodeParentId}" not found.`);
+async function myAddGenerateNode() {
+    const myParentId = document.getElementById('myNewNodeParentId').value;
+    const myNameInput = document.getElementById('myNewNodeName');
+    const myFactInput = document.getElementById('myNewNodeFact');
+    const myLoops = document.getElementById('myGenerateLoopNumber').value;
+
+    if (!mySession) {
+        myShowMessage("Please load the Gemini Nano model first.");
+        return;
+    }
+
+    if (!myLoops || parseInt(myLoops) <= 0) {
+        myShowMessage("Please enter a valid number of nodes to generate.");
+        return;
+    }
+
+    // Start the generation loop
+    await myGenerateNodesLoop(myParentId, myNameInput, myFactInput, parseInt(myLoops));
+
+    // Close the dialog and reset the state only after the loop is complete
+    document.getElementById('myAddNodeDialog').style.display = 'none';
+  //  myUnselectAllNodes();
 }
 
-*/
+  
 
-                
-                // generate the name and the facts. possibly two calls to the llm
-                //alert('not yet')
-/*
-const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
-
-Access the Name Property: Once you have the parent node object, you can directly access its name from the data property.
-const myParentNodeName = myParentNode.data.name;
-
-              */
-               const myNewNodeParentId = document.getElementById('myNewNodeParentId').value
-              const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
-              const myParentNodeName = myParentNode ? myParentNode.data.name : "unknown";
-
-                
-              console.log('document.getElementById(myNewNodeParentId).value')
-              console.log(document.getElementById('myNewNodeParentId').value)
-              
-            console.log('myParentNodeName')
-            console.log(myParentNodeName)
-              
-               const myPrompt = `Generate a one or two word sub concept for the term  ${myParentNodeName}. `;
-             await   myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
-            }
-            else {
-               // easier just generate the fact based on the node name 
-                 const myPrompt = `Generate one short, interesting, and concise fact about ${document.getElementById('myNewNodeName').value}. Do not include any text other than the fact itself.`;
-
-                document.getElementById('myNewNodeFact').value = ''
-               await myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'), myPrompt)
-                myAddNewNode()
-            }
-             // document.getElementById('myNewNodeName').value = '';
-            //  document.getElementById('myNewNodeParentId').value = '';
-            //  document.getElementById('myNewNodeFact').value = '';
+async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
+    for (let i = 0; i < numLoops; i++) {
+        // Step 1: Generate the new node name (sub-concept)
+        nameInput.value = 'Generating name...';
+        const namePrompt = `Generate a one or two word sub-concept for the term ${parentId}.`;
+        const newName = await mySession.promptStreaming(namePrompt, { signal: new AbortController().signal });
+        let generatedName = '';
+        for await (const chunk of newName) {
+            generatedName += chunk;
         }
+        nameInput.value = generatedName.trim();
+
+        // Step 2: Generate the fact for the new node
+        factInput.value = 'Generating fact...';
+        const factPrompt = `Generate one short, interesting, and concise fact about ${generatedName.trim()}. Do not include any text other than the fact itself.`;
+        const newFact = await mySession.promptStreaming(factPrompt, { signal: new AbortController().signal });
+        let generatedFact = '';
+        for await (const chunk of newFact) {
+            generatedFact += chunk;
+        }
+        factInput.value = generatedFact.trim();
+
+        // Step 3: Add the new node to the graph
+        await myAddNewNode(false); // Pass 'false' to indicate not to close the dialog
+        nameInput.value = '';
+        factInput.value = '';
+    }
+}
+      
 async function myGenerateFact(myInData, myOutFact, myPrompt) {
     if (mySelectedNodes.length !== 1) {
         myShowMessage("Please select a single node to generate a fact for.");
