@@ -494,6 +494,7 @@ function myTidyUpGraph(layoutType) {
             myUpdate(myRootNode);
         }
         function myUpdate(source) {
+            let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
             const myNodeData = myRootNode.descendants();
             const myTreeLinkData = myRootNode.links();
             const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
@@ -550,7 +551,7 @@ function myTidyUpGraph(layoutType) {
                 });
             myNodeEnter.append("circle")
                 .attr("r", 10)
-                .style("fill", "#69a3b2")
+                .style("fill", d => myColorScale(d.depth)) // <-- New code
                 .style("stroke", "steelblue")
                 .style("stroke-width", "2px");
             myNodeEnter.append("text")
