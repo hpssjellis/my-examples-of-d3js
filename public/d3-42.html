@@ -166,7 +166,12 @@
     <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog('')">Add Node</button>
     <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
-    <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
+    <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph(document.getElementById('myLayoutSelector').value)">Tidy Up</button>
+    <select id="myLayoutSelector" onchange="myChangeLayout()">
+        <option value="tree">Tree Layout</option>
+        <option value="cluster">Cluster Layout</option>
+        <option value="force">Force-Directed Graph</option>
+    </select>
     <div id="myShowDiv"> ... </div>
     <svg id="mySvgContainer"></svg>
     <div id="myFactDialog" class="my-movable-dialog2" ">
@@ -419,12 +424,35 @@
         function myZoomed(event) {
             mySvg.attr("transform", event.transform);
         }
+
+function myTidyUpGraph(layoutType) {
+    if (!myRootNode) return;
+
+    // Apply the selected layout
+    if (layoutType === 'tree') {
+        myTreeLayout = d3.tree().size([myWidth, myHeight - 75]);
+        myTreeLayout(myRootNode);
+    } else if (layoutType === 'cluster') {
+        myTreeLayout = d3.cluster().size([myWidth, myHeight - 75]);
+        myTreeLayout(myRootNode);
+    } else if (layoutType === 'force') {
+        // Force layout requires a different approach
+        // See the next code block for implementation
+    }
+
+    myUpdate(myRootNode);
+    myShowMessage(`Graph layout has been reset to ${layoutType}.`);
+}
+        /*
         function myTidyUpGraph() {
             if (!myRootNode) return;
             myTreeLayout(myRootNode);
             myUpdate(myRootNode);
             myShowMessage("Graph layout has been reset.");
         }
+
+
+        */
         function myFitToScreen() {
             const myNodeElements = d3.selectAll(".node").nodes();
             const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
