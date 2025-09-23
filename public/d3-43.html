@@ -455,48 +455,7 @@ function myDeleteSelectedNodes() {
     myUnselectAllNodes();
     myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
 }
-        /*
-    function myDeleteSelectedNodes() {
-    if (mySelectedNodes.length === 0) {
-        myShowMessage("Please select one or more nodes to delete.");
-        return;
-    }
-
-    const myNodesToDelete = mySelectedNodes.map(d => d.id);
-    const myRawData = myRootNode.descendants().map(d => d.data);
-
-    // Filter out the selected nodes and their descendants
-    const myFilteredData = myRawData.filter(d => {
-        // Find if the node or any of its ancestors are selected for deletion
-        let currentNode = d;
-        while (currentNode) {
-            if (myNodesToDelete.includes(currentNode.id)) {
-                return false; // Found a deleted ancestor, so delete this node too
-            }
-            currentNode = myRootNode.descendants().find(n => n.id === currentNode.parentId);
-        }
-        return true; // Keep the node
-    });
-
-    // Also remove any arbitrary links that involve the deleted nodes
-    myArbitraryLinks = myArbitraryLinks.filter(link => 
-        !myNodesToDelete.includes(link.sourceId) && !myNodesToDelete.includes(link.targetId)
-    );
-
-    // Recreate the hierarchical data from the filtered data
-    myRootNode = d3.stratify()
-        .id(d => d.id)
-        .parentId(d => d.parentId)(myFilteredData);
-
-    // Call myUpdate to redraw the graph with the new data
-    myUpdate(myRootNode);
-
-    myUnselectAllNodes();
-    myShowMessage(`Deleted ${myNodesToDelete.length} node(s) and their descendants.`);
-}
-
-
-        */
+    
  function myChangeLayout() {
     const layoutType = document.getElementById('myLayoutSelector').value;
     myTidyUpGraph(layoutType);
