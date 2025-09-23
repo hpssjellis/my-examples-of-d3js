@@ -298,8 +298,9 @@ function mySaveEditedNode() {
 
         
 function myCustomLayout() {
+    myRefreshGraph();
     // A constant for vertical spacing. This controls the distance between levels.
-    const verticalSpacing = 100;
+    const verticalSpacing = 40;
 
     // A constant for horizontal spacing. This is the minimum space between nodes on the same level.
     const horizontalSpacing = 20;
@@ -322,7 +323,7 @@ function myCustomLayout() {
         // We need to avoid overlapping text on the same level.
         // We'll estimate the width of the node's text label.
         // A rough estimate: 8 pixels per character, plus a fixed buffer.
-        const nameWidth = d.data.name.length * 8 + 40;
+        const nameWidth = d.data.name.length * 8 + 20;
 
         // Get the last x-position used on this level. If none exists, start at 0.
         const lastX = xPositionsByLevel.get(d.depth) || 0;
