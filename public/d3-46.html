@@ -756,8 +756,8 @@ function myTidyUpGraph(layoutType) {
                 return;
             }
             const myParentNodeName = myParentNode.data.name;
-            console.log('myParentNodeName')
-            console.log(myParentNodeName)
+         //   console.log('myParentNodeName')
+        //    console.log(myParentNodeName)
             const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
             const myNewDataPoint = {
                 id: myNewNodeId,
@@ -791,7 +791,7 @@ function myTidyUpGraph(layoutType) {
                 myNewNode.x0 = 0;
                 myNewNode.y0 = 0;
             }
-            console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
+         //   console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
 
             myUpdate(myRootNode);
           //  document.getElementById('myAddNodeDialog').style.display = 'none';
