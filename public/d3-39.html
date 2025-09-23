@@ -139,6 +139,12 @@
         .node.selected circle {
             fill: crimson !important;
         }
+        #mySvgContainer {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc; /* optional, for visibility */
+        }
+        
     </style>
 </head>
 <body>
@@ -363,7 +369,8 @@
         };
         window.onload = function() {
           //  myWidth = 960;
-            myWidth = document.getElementById('mySvgContainer').parentElement.offsetWidth;
+           // myWidth = document.getElementById('mySvgContainer').parentElement.offsetWidth;
+            myWidth = window.innerWidth - 40;
             myHeight = 600;
             myZoomBehavior = d3.zoom().on("zoom", myZoomed);
             mySvg = d3.select("#mySvgContainer")
