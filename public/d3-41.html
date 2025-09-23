@@ -163,7 +163,7 @@
     <input type="file" id="myFileLoad" style="display: none;" onchange="myLoadFile(event)">
     <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
     <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
-    <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog()">Add Node</button>
+    <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog('')">Add Node</button>
     <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
     <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
@@ -603,7 +603,7 @@
                 myShowMessage("Please select ONLY one node to add a child node to.");
             }
         }
-        function myAddNewNode() {
+        function myAddNewNode(shouldCloseDialog = true) {
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
             const myNewNodeFact = document.getElementById('myNewNodeFact').value;
@@ -751,8 +751,8 @@ async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
 
         // Step 3: Add the new node to the graph
         await myAddNewNode(false); // Pass 'false' to indicate not to close the dialog
-        nameInput.value = '';
-        factInput.value = '';
+        await nameInput.value = '';
+        await factInput.value = '';
     }
 }
       
