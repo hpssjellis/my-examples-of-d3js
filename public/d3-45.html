@@ -479,54 +479,37 @@ function myDeleteSelectedNodes() {
     const layoutType = document.getElementById('myLayoutSelector').value;
     myTidyUpGraph(layoutType);
 }
-        const mySimulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(d => d.id))
-    .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(myWidth / 2, myHeight / 2));
+
 
         
 function myTidyUpGraph(layoutType) {
     if (!myRootNode) return;
-    if (layoutType === 'force') {
-        const nodes = myRootNode.descendants();
-        const links = myRootNode.links();
 
-        mySimulation.nodes(nodes).on("tick", () => {
-            // Update node and link positions on each tick
-            mySvg.selectAll(".node")
-                .attr("transform", d => `translate(${d.x},${d.y})`);
-
-            mySvg.selectAll(".link")
-                .attr("d", d => {
-                    return `M${d.source.x},${d.source.y} L${d.target.x},${d.target.y}`;
-                });
-        });
-
-        mySimulation.force("link").links(links);
-    } else {
     // Apply the selected layout
     if (layoutType === 'tree') {
         myTreeLayout = d3.tree().size([myWidth, myHeight - 75]);
         myTreeLayout(myRootNode);
-    } 
-    else if (layoutType === 'radial') {
+    } else if (layoutType === 'radial') {
     myTreeLayout = d3.tree().size([2 * Math.PI, Math.min(myWidth, myHeight) / 2]);
     myTreeLayout(myRootNode);
     myRootNode.descendants().forEach(d => {
         d.x = d.y * Math.cos(d.x - Math.PI / 2);
         d.y = d.y * Math.sin(d.x - Math.PI / 2);
     });
-}
-    
-    else if (layoutType === 'cluster') {
+} else if (layoutType === 'cluster') {
         myTreeLayout = d3.cluster().size([myWidth, myHeight - 75]);
         myTreeLayout(myRootNode);
     } 
-    }
+    
     myUpdate(myRootNode);
     myShowMessage(`Graph layout has been reset to ${layoutType}.`);
 }
+        
 
+
+
+
+        
         function myFitToScreen() {
             const myNodeElements = d3.selectAll(".node").nodes();
             const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
@@ -828,6 +811,7 @@ async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
         await myAddNewNode(false); // Pass 'false' to indicate not to close the dialog
         nameInput.value = '';
         factInput.value = '';
+        myRefreshGraph();
     }
 }
       
