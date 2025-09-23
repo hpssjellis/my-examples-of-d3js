@@ -186,13 +186,13 @@
         <div class="my-movable-dialog-header">
             <h3>Add New Node</h3>
         </div>
-        <input type="text" id="myNewNodeName" placeholder="Node Name">
-        <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
-        <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
-        <button class="myD3Button" onclick="myAddGenerateNode()">Generate #</button>
-        <input type="number" id="myGenerateLoopNumber" value="1"> 
-        <button class="myD3Button" onclick="myAddNewNode()">Add</button>
-        <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
+        <input type="text" id="myNewNodeName" placeholder="Node Name" title="title for the node">
+        <input type="text" id="myNewNodeParentId" readonly placeholder="Parent ID"  title="The selected node ID number" >
+        <input type="text" id="myNewNodeFact" placeholder="Fact (optional)"  title="Fact with the title" >
+        <button class="myD3Button" onclick="myAddGenerateNode()"  title="LLM Generate Title and or fact" >Generate</button>
+        <input type="number" id="myGenerateLoopNumber" value="1"  title="How many titles and facts to generatte" > 
+        <button class="myD3Button" onclick="myAddNewNode()"  title="Manually Add the Information" >Add</button>
+        <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'"  >Cancel</button>
     </div>
     <div id="myAddLineDialog" class="my-movable-dialog">
         <div class="my-movable-dialog-header">
