@@ -227,16 +227,18 @@
 
 function myRefreshGraph() {
     // 1. Get the latest raw data from the current graph nodes
-    const myRawData = myRootNode.descendants().map(d => d.data);
+      // Define the color scale, just like in your myUpdate function.
+    // This is necessary because myUpdate() is not being called.
+    const myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#800080']);
 
-    // 2. Re-create the D3.js hierarchy from the latest data
-    myRootNode = d3.stratify()
-        .id(d => d.id)
-        .parentId(d => d.parentId)(myRawData);
+    // Select all elements with the class "node"
+    d3.selectAll(".node")
+        // Use the .select("circle") to grab the circle element inside each node group
+        .select("circle")
+        // Manually apply the fill color based on the node's depth property
+        .style("fill", d => myColorScale(d.depth));
 
-    myUpdate(myRootNode);
-
-    myShowMessage("Graph refreshed and colors updated.");
+    myShowMessage("Node colors have been refreshed.");
 }
 
         
