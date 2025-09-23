@@ -615,8 +615,8 @@ function findHighestIdNumber() {
             // Call the function to find the highest number from existing IDs
             // and set the global counter to that value.
             myNodeIdCounter = findHighestIdNumber();
-            Console.log('myNodeIdCounter')
-            Console.log(myNodeIdCounter)
+            console.log('myNodeIdCounter')
+            console.log(myNodeIdCounter)
             myTreeLayout(myRootNode);
             myRootNode.descendants().forEach(d => {
                 const myLoadedData = myRawData.find(item => item.id === d.id);
