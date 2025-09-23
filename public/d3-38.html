@@ -637,7 +637,15 @@
                 myNewNode.y = myParentNode.y+30;
                 myNewNode.x0 = myParentNode.x;
                 myNewNode.y0 = myParentNode.y;
+            } else {
+                // Emergency default so we never get "undefined"
+                myNewNode.x = 0;
+                myNewNode.y = 0;
+                myNewNode.x0 = 0;
+                myNewNode.y0 = 0;
             }
+            console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
+
             myUpdate(myRootNode);
             document.getElementById('myAddNodeDialog').style.display = 'none';
             myUnselectAllNodes();
