@@ -641,8 +641,8 @@
             });
             const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
             if (myNewNode) {
-                myNewNode.x = myParentNode.x+100;
-                myNewNode.y = myParentNode.y+30;
+                myNewNode.x = myParentNode.x + (Math.random() * 200) - 100;
+                myNewNode.y = myParentNode.y + (Math.random() * 40);
                 myNewNode.x0 = myParentNode.x;
                 myNewNode.y0 = myParentNode.y;
             } else {
