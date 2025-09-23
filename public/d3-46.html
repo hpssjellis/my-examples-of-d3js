@@ -419,6 +419,7 @@ function myRefreshGraph() {
             }
         }
         /* D3.js - Global variables and functions */
+        let myNodeIdCounter = 0;
         let mySvg, myWidth, myHeight;
         let myTreeLayout;
         let myRootNode;
@@ -579,12 +580,43 @@ function myTidyUpGraph(layoutType) {
                 .duration(750)
                 .call(myZoomBehavior.transform, d3.zoomIdentity.translate(myTranslateX, myTranslateY).scale(myScale));
         }
+
+
+function findHighestIdNumber() {
+    let maxId = 0;
+    // Get all the nodes currently in the graph.
+    const allNodes = myRootNode.descendants();
+    
+    // Loop through each node.
+    allNodes.forEach(node => {
+        // A regular expression to find one or more digits at the end of the string.
+        const match = node.id.match(/\d+$/);
+        
+        // If a number is found, convert it to an integer and check if it's the new highest.
+        if (match) {
+            const idNumber = parseInt(match[0]);
+            if (idNumber > maxId) {
+                maxId = idNumber;
+            }
+        }
+    });
+    
+    return maxId;
+}
+
+        
         function myDrawData(data) {
             const myRawData = data.nodes;
             myArbitraryLinks = data.links;
             myRootNode = d3.stratify()
                 .id(d => d.id)
                 .parentId(d => d.parentId)(myRawData);
+
+            // Call the function to find the highest number from existing IDs
+            // and set the global counter to that value.
+            myNodeIdCounter = findHighestIdNumber();
+            Console.log('myNodeIdCounter')
+            Console.log(myNodeIdCounter)
             myTreeLayout(myRootNode);
             myRootNode.descendants().forEach(d => {
                 const myLoadedData = myRawData.find(item => item.id === d.id);
@@ -741,7 +773,86 @@ function myTidyUpGraph(layoutType) {
                 myShowMessage("Please select ONLY one node to add a child node to.");
             }
         }
+
+
+function myAddNewNode(shouldCloseDialog = true) {
+    // 1. Increment the counter to get a unique number for the new node.
+    myNodeIdCounter++;
+    
+    const myNewNodeName = document.getElementById('myNewNodeName').value;
+    const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+    const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+    
+    if (!myNewNodeName || !myNewNodeParentId) {
+        myShowMessage("Node Name and Parent ID are required.");
+        return;
+    }
+    
+    const myRawData = myRootNode.descendants().map(d => d.data);
+    
+    // 2. Generate a unique ID using the sanitized name and the counter.
+    const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '') + '-' + myNodeIdCounter;
+    
+    const myNewDataPoint = {
+        id: myNewNodeId,
+        parentId: myNewNodeParentId,
+        name: myNewNodeName,
+        fact: myNewNodeFact || ""
+    };
+    
+    myRawData.push(myNewDataPoint);
+    
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+    
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+        
+    myTreeLayout(myRootNode);
+    
+    myRootNode.descendants().forEach(d => {
+        const oldPos = myCurrentPositions.get(d.id);
+        if (oldPos) {
+            d.x = oldPos.x;
+            d.y = oldPos.y;
+        }
+    });
+    
+    const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
+    
+    if (myNewNode) {
+        const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+        if (myParentNode) {
+            myNewNode.x = myParentNode.x + (Math.random() * 300) - 150;
+            myNewNode.y = myParentNode.y + (Math.random() * 70);
+            myNewNode.x0 = myParentNode.x;
+            myNewNode.y0 = myParentNode.y;
+        } else {
+            myNewNode.x = 0;
+            myNewNode.y = 0;
+            myNewNode.x0 = 0;
+            myNewNode.y0 = 0;
+        }
+    }
+    
+    console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
+
+    myUpdate(myRootNode);
+    
+    if (shouldCloseDialog) {
+        document.getElementById('myAddNodeDialog').style.display = 'none';
+        myUnselectAllNodes();
+    }
+    
+    myShowMessage(`Added new node "${myNewNodeName}".`);
+}
+
+
+/*
+        
         function myAddNewNode(shouldCloseDialog = true) {
+                // 1. Increment the counter to get a unique number for the new node.
+    myNodeIdCounter++;
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
             const myNewNodeFact = document.getElementById('myNewNodeFact').value;
@@ -750,6 +861,11 @@ function myTidyUpGraph(layoutType) {
                 return;
             }
             const myRawData = myRootNode.descendants().map(d => d.data);
+
+
+
+
+            
             const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
             if (!myParentNode) {
                 myShowMessage("Parent node not found with the given ID.");
@@ -803,6 +919,10 @@ function myTidyUpGraph(layoutType) {
             myShowMessage(`Added new node "${myNewNodeName}".`);
         }
 
+
+*/
+
+        
 
 async function myAddGenerateNode() {
     const myParentId = document.getElementById('myNewNodeParentId').value;
