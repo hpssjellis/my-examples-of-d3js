@@ -682,7 +682,7 @@ Access the Name Property: Once you have the parent node object, you can directly
 const myParentNodeName = myParentNode.data.name;
 
               */
-               const myNewNodeParentId = document.getElementById(myNewNodeParentId).value
+               const myNewNodeParentId = document.getElementById('myNewNodeParentId').value
               const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
               const myParentNodeName = myParentNode ? myParentNode.data.name : "unknown";
 
