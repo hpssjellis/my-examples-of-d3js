@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Nano & D3.js Interactive Graph</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .my-button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #e0e0e0;
+        }
+        .my-button:hover {
+            background-color: #d0d0d0;
+        }
+        .my-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .my-textarea {
+            width: 98%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .my-output {
+            background-color: #fff;
+        }
+        .my-status {
+            font-family: monospace;
+            background-color: #e9e9e9;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .my-footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            font-size: 0.8em;
+            text-align: center;
+        }
+        .myD3Button {
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+        }
+        .myD3Button:hover {
+            background-color: #e8e8e8;
+        }
+        .node circle {
+            cursor: pointer;
+        }
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 1.5px;
+        }
+        .arbitrary-link {
+            fill: none;
+            stroke: #5d5d5d;
+            stroke-width: 2.5px;
+        }
+        .line-text {
+            fill: #555;
+            font-family: sans-serif;
+            font-size: 10px;
+        }
+        .my-movable-dialog {
+            position: fixed;
+            z-index: 999;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            bottom: 20px; /* Position from the bottom */
+            right: 20px; /* Position from the right */
+            transform: translateX(-50%);
+            display: none;
+
+        }
+        .my-movable-dialog-header {
+            cursor: grab;
+            padding: 5px;
+            background-color: #ddd;
+            text-align: center;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+
+            .my-movable-dialog2 {
+            position: fixed;
+            z-index: 999;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            bottom: 20px; /* Position from the bottom */
+            right: 20px; /* Position from the right */
+           /* transform: translateX(-50%);  */
+            display: block;
+            resize: both; /* Allows the user to resize the dialog */
+            overflow: auto; /* Adds scrollbars if content overflows */
+        }
+        .my-movable-dialog-header2 {
+            cursor: grab;
+            padding: 5px;
+            background-color: #ddd;
+            text-align: center;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+
+        
+        .my-movable-dialog input, .my-movable-dialog button {
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .my-movable-dialog textarea {
+            width: calc(100% - 20px);
+            resize: both;
+            overflow: auto; /* Adds scrollbars if content overflows */
+        }
+        .node.selected circle {
+            fill: crimson !important;
+        }
+        #mySvgContainer {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc; /* optional, for visibility */
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Client-side-Chrome GeminiNano API</h1>
+    <p>For desktop/laptop only. Needs 4GB download and 22GB free space.</p>
+    <button id="myLoadButton" onclick="myLoadModel()" class="my-button my-load-button">Load Model</button>
+    <button id="myStreamButton" onclick="myToggleStream()" class="my-button my-stream-button">Generate Graph</button>
+    <button id="mySaveButton" onclick="mySaveJSONFile()" class="my-button my-save-button" disabled>Save Output JSON</button>
+    <br><br>
+    <textarea id="myInputPrompt" class="my-textarea" rows="6" cols="120" placeholder="Type your prompt here...">Generate a single JSON object about animals. The object must contain two top-level keys: "nodes" and "links". The "nodes" value must be an array of objects, each with "id" (a unique ordered number), "parentId" (a string corresponding to its parent's id, or an empty string for the root node which in this case will have the name "animals"), "name" (a descriptive string), and "fact" (a string containing a brief interesting fact about the node). The "links" value must be an empty array []. Do not include any text outside of the JSON object.</textarea>
+    <br>
+    <div id="myDiv01" class="my-status">...</div><br>
+    <textarea id="myOutput" class="my-textarea my-output" rows="10" cols="120" readonly></textarea>
+    <hr>
+    <h1>D3.js Hierarchical Data Demo</h1>
+    <input type="file" id="myFileLoad" style="display: none;" onchange="myLoadFile(event)">
+    <button class="myD3Button" id="myLoadD3Button" onclick="document.getElementById('myFileLoad').click()">Load from JSON</button>
+    <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
+    <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog('')">Add Node</button>
+    <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
+    <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
+    <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph()">Tidy Up</button>
+    <svg id="mySvgContainer"></svg>
+    <div id="myFactDialog" class="my-movable-dialog2" ">
+        <div class="my-movable-dialog-header2">
+            Node Fact
+        </div>
+        <textarea id="myFactDisplayArea" rows=4 cols=80 readonly placeholder="Mouseover a node to see its fact."></textarea>
+    </div>
+    <div id="myAddNodeDialog" class="my-movable-dialog">
+        <div class="my-movable-dialog-header">
+            <h3>Add New Node</h3>
+        </div>
+        <input type="text" id="myNewNodeName" placeholder="Node Name">
+        <input type="text" id="myNewNodeParentId" placeholder="Parent ID">
+        <input type="text" id="myNewNodeFact" placeholder="Fact (optional)">
+        <button class="myD3Button" onclick="myAddGenerateNode()">Generate</button>
+        <input type="number" id="myGenerateLoopNumber" size="5" value="1"> 
+        <button class="myD3Button" onclick="myAddNewNode()">Add</button>
+        <button class="myD3Button" onclick="document.getElementById('myAddNodeDialog').style.display = 'none'">Cancel</button>
+    </div>
+    <div id="myAddLineDialog" class="my-movable-dialog">
+        <div class="my-movable-dialog-header">
+            <h3>Add New Line</h3>
+        </div>
+        Select two nodes on the graph first.
+        <input type="text" id="myJoiningFact" placeholder="Joining Fact (optional)">
+        <button class="myD3Button" onclick="myAddLineWithFact()">Add</button>
+        <button class="myD3Button" onclick="document.getElementById('myAddLineDialog').style.display = 'none'">Cancel</button>
+    </div>
+    <br><br>
+    <footer class="my-footer">
+        Use at your own risk.<br>
+        By Jeremy Ellis <a href="https://www.linkedin.com/in/jeremy-ellis-4237a9bb/">LinkedIn</a>
+    </footer>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        /* Gemini Nano API - Global variables and functions */
+        let mySession = null;
+        const myInputPrompt = document.getElementById('myInputPrompt');
+        const myOutput = document.getElementById('myOutput');
+        const myDiv01 = document.getElementById('myDiv01');
+        const myStreamButton = document.getElementById('myStreamButton');
+        const myLoadButton = document.getElementById('myLoadButton');
+        const mySaveButton = document.getElementById('mySaveButton');
+        let myStartTime = 0;
+        let myTimerInterval = null;
+        let myLastGeneratedText = '';
+        let myController = null;
+        let myIsProcessing = false;
+        function myUpdateTimerDisplay() {
+            const myElapsed = (Date.now() - myStartTime) / 1000;
+            myDiv01.textContent = `Thinking... ${myElapsed.toFixed(2)}s`;
+        }
+        function myResetStreamState() {
+            myLastGeneratedText = '';
+            myOutput.value = '';
+            if (myTimerInterval) {
+                clearInterval(myTimerInterval);
+                myTimerInterval = null;
+            }
+            myController = null;
+        }
+        async function myLoadModel() {
+            if (myIsProcessing) return;
+            myDiv01.textContent = 'Loading model...';
+            try {
+                myIsProcessing = true;
+                if (typeof LanguageModel === 'undefined') {
+                    myDiv01.textContent = 'Error: LanguageModel API is not available. Please enable the required flags.';
+                    return;
+                }
+                mySession = await LanguageModel.create();
+                myDiv01.textContent = 'Model loaded successfully. Ready to generate graph.';
+                myLoadButton.disabled = true;
+            } catch (myError) {
+                myDiv01.textContent = `Error loading model: ${myError.message}`;
+            } finally {
+                myIsProcessing = false;
+            }
+        }
+        async function myToggleStream() {
+            if (myStreamButton.textContent === 'Stop' && myController) {
+                myController.abort();
+                return;
+            }
+            if (myIsProcessing) return;
+            myResetStreamState();
+            const myPrompt = myInputPrompt.value.trim();
+            if (!mySession) {
+                myOutput.value = 'Please load the model first.';
+                myDiv01.textContent = '...';
+                return;
+            }
+            if (!myPrompt) {
+                myOutput.value = 'Please enter a prompt.';
+                myDiv01.textContent = '...';
+                return;
+            }
+            myStreamButton.textContent = 'Stop';
+            mySaveButton.disabled = true;
+            myStartTime = Date.now();
+            myTimerInterval = setInterval(myUpdateTimerDisplay, 100);
+            myController = new AbortController();
+            try {
+                myIsProcessing = true;
+                const myStream = await mySession.promptStreaming(myPrompt, {
+                    signal: myController.signal,
+                    outputLanguage: 'en'
+                });
+                for await (const myChunk of myStream) {
+                    myLastGeneratedText += myChunk;
+                    myOutput.value = myLastGeneratedText;
+                    myOutput.scrollTop = myOutput.scrollHeight;
+                }
+                const myStartIndex = myLastGeneratedText.indexOf('{');
+                const myEndIndex = myLastGeneratedText.lastIndexOf('}');
+                if (myStartIndex !== -1 && myEndIndex !== -1) {
+                    const mySanitizedText = myLastGeneratedText.substring(myStartIndex, myEndIndex + 1);
+                    try {
+                        const myGeneratedJSON = JSON.parse(mySanitizedText);
+                        d3.select("#mySvgContainer g").selectAll("*").remove();
+                        myDrawData(myGeneratedJSON);
+                    } catch (e) {
+                        myDiv01.textContent = `Error: Generated output is not valid JSON. ${e.message}`;
+                    }
+                }
+            } catch (myError) {
+                if (myError.name === 'AbortError') {
+                    myDiv01.textContent = 'Streaming stopped by user.';
+                } else {
+                    myOutput.value = `Error streaming prompt: ${myError.message}`;
+                }
+            } finally {
+                clearInterval(myTimerInterval);
+                const myEndTime = Date.now();
+                const myDurationSeconds = (myEndTime - myStartTime) / 1000;
+                const myCharCount = myLastGeneratedText.length;
+                const myWordCount = myLastGeneratedText.split(/\s+/).filter(myWord => myWord.length > 0).length;
+                const myCharsPerSecond = myDurationSeconds > 0 ? (myCharCount / myDurationSeconds).toFixed(2) : '0.00';
+                const myWordsPerSecond = myDurationSeconds > 0 ? (myWordCount / myDurationSeconds).toFixed(2) : '0.00';
+                myDiv01.innerHTML =
+                    `Completed in ${myDurationSeconds.toFixed(2)}s<br>` +
+                    `Chars: ${myCharCount} (${myCharsPerSecond}/s)<br>` +
+                    `Words: ${myWordCount} (${myWordsPerSecond}/s)`;
+                myStreamButton.textContent = 'Generate Graph';
+                myStreamButton.disabled = false;
+                mySaveButton.disabled = false;
+                myIsProcessing = false;
+                myController = null;
+            }
+        }
+        function mySaveJSONFile() {
+            const myOutputText = myOutput.value;
+            if (myOutputText.trim() === '') {
+                myDiv01.textContent = 'Output is empty. Nothing to save.';
+                return;
+            }
+            try {
+                const myStartIndex = myOutputText.indexOf('{');
+                const myEndIndex = myOutputText.lastIndexOf('}');
+                if (myStartIndex === -1 || myEndIndex === -1) {
+                    myDiv01.textContent = 'Error: No valid JSON object found in the output.';
+                    return;
+                }
+                const mySanitizedText = myOutputText.substring(myStartIndex, myEndIndex + 1);
+                JSON.parse(mySanitizedText);
+                const myBlob = new Blob([mySanitizedText], { type: 'application/json' });
+                const myUrl = URL.createObjectURL(myBlob);
+                const myLink = document.createElement('a');
+                myLink.href = myUrl;
+                myLink.download = 'data.json';
+                document.body.appendChild(myLink);
+                myLink.click();
+                document.body.removeChild(myLink);
+                URL.revokeObjectURL(myUrl);
+                myDiv01.textContent = 'JSON file saved successfully.';
+            } catch (e) {
+                myDiv01.textContent = `Error: The sanitized output is not valid JSON. Details: ${e.message}`;
+            }
+        }
+        /* D3.js - Global variables and functions */
+        let mySvg, myWidth, myHeight;
+        let myTreeLayout;
+        let myRootNode;
+        let myArbitraryLinks = [];
+        let myIsDragging = false;
+        let mySelectedNodes = [];
+        let myZoomBehavior;
+        const myLineGenerator = d3.line().x(d => d.x).y(d => d.y);
+        const myDefaultData = {
+            nodes: [
+                { id: "food", parentId: "", name: "Food", fact: "" },
+                { id: "meat", parentId: "food", name: "Meat", fact: "" },
+                { id: "carbs", parentId: "food", name: "Carbs", fact: "" },
+                { id: "salmon", parentId: "meat", name: "Salmon", fact: "" },
+                { id: "steak", parentId: "meat", name: "Steak", fact: "" },
+                { id: "chicken", parentId: "meat", name: "Chicken", fact: "Chickens can fly, but only for short distances. The chicken is the closest living relative of the T-rex." },
+                { id: "round", parentId: "steak", name: "Round", fact: "" },
+                { id: "tbone", parentId: "steak", name: "T-Bone", fact: "" }
+            ],
+            links: []
+        };
+        window.onload = function() {
+          //  myWidth = 960;
+           // myWidth = document.getElementById('mySvgContainer').parentElement.offsetWidth;
+            myWidth = window.innerWidth - 40;
+            myHeight = 600;
+            myZoomBehavior = d3.zoom().on("zoom", myZoomed);
+            mySvg = d3.select("#mySvgContainer")
+                .attr("width", myWidth)
+                .attr("height", myHeight)
+                .call(myZoomBehavior)
+                .append("g");
+            mySvg.on("click", myUnselectAllNodes);
+            myTreeLayout = d3.tree()
+                .size([myWidth, myHeight - 75]);
+            myDrawData(myDefaultData);
+            myMakeDraggable("myFactDialog", ".my-movable-dialog-header2");
+            myMakeDraggable("myAddNodeDialog", ".my-movable-dialog-header");
+            myMakeDraggable("myAddLineDialog", ".my-movable-dialog-header");
+        };
+        // Function to make a dialog draggable
+        function myMakeDraggable(dialogId, headerSelector) {
+            const myDialog = document.getElementById(dialogId);
+            if (!myDialog) {
+                console.error(`Error: Dialog with ID '${dialogId}' not found.`);
+                return;
+            }
+            const myHeader = myDialog.querySelector(headerSelector);
+            if (!myHeader) {
+                console.error(`Error: Header with selector '${headerSelector}' not found in dialog with ID '${dialogId}'.`);
+                return;
+            }
+            myHeader.onmousedown = (e) => {
+                e.preventDefault();
+                let myOffsetX = e.clientX - myDialog.offsetLeft;
+                let myOffsetY = e.clientY - myDialog.offsetTop;
+                function myMouseMove(e) {
+                    myDialog.style.top = (e.clientY - myOffsetY) + 'px';
+                    myDialog.style.left = (e.clientX - myOffsetX) + 'px';
+                }
+                function myMouseUp() {
+                    window.removeEventListener('mousemove', myMouseMove);
+                    window.removeEventListener('mouseup', myMouseUp);
+                }
+                window.addEventListener('mousemove', myMouseMove);
+                window.addEventListener('mouseup', myMouseUp);
+            };
+        }
+        function myZoomed(event) {
+            mySvg.attr("transform", event.transform);
+        }
+        function myTidyUpGraph() {
+            if (!myRootNode) return;
+            myTreeLayout(myRootNode);
+            myUpdate(myRootNode);
+            myShowMessage("Graph layout has been reset.");
+        }
+        function myFitToScreen() {
+            const myNodeElements = d3.selectAll(".node").nodes();
+            const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
+            const allElements = [...myNodeElements, ...myLinkElements];
+            if (allElements.length === 0) {
+                return;
+            }
+            const myCombinedBoundingBox = allElements.reduce((box, el) => {
+                const b = el.getBBox();
+                return {
+                    x: Math.min(box.x, b.x),
+                    y: Math.min(box.y, b.y),
+                    width: Math.max(box.width, b.x + b.width),
+                    height: Math.max(box.height, b.y + b.height)
+                };
+            }, { x: Infinity, y: Infinity, width: -Infinity, height: -Infinity });
+            const myScale = Math.min(myWidth / myCombinedBoundingBox.width, myHeight / myCombinedBoundingBox.height) * 0.9;
+            const myTranslateX = (myWidth / 2) - (myCombinedBoundingBox.x + myCombinedBoundingBox.width / 2) * myScale;
+            const myTranslateY = (myHeight / 2) - (myCombinedBoundingBox.y + myCombinedBoundingBox.height / 2) * myScale;
+            d3.select("#mySvgContainer")
+                .transition()
+                .duration(750)
+                .call(myZoomBehavior.transform, d3.zoomIdentity.translate(myTranslateX, myTranslateY).scale(myScale));
+        }
+        function myDrawData(data) {
+            const myRawData = data.nodes;
+            myArbitraryLinks = data.links;
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
+            myTreeLayout(myRootNode);
+            myRootNode.descendants().forEach(d => {
+                const myLoadedData = myRawData.find(item => item.id === d.id);
+                d.x = myLoadedData && myLoadedData.x ? +myLoadedData.x : d.x;
+                d.y = myLoadedData && myLoadedData.y ? +myLoadedData.y : d.y;
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+            myUpdate(myRootNode);
+        }
+        function myUpdate(source) {
+            const myNodeData = myRootNode.descendants();
+            const myTreeLinkData = myRootNode.links();
+            const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
+            const myFactDialog = document.getElementById("myFactDialog");
+            const myFactDisplayArea = document.getElementById("myFactDisplayArea");
+            const myDragBehavior = d3.drag()
+                .on("start", myDragStart)
+                .on("drag", myDragged)
+                .on("end", myDragEnd);
+            const myTreeLink = mySvg.selectAll(".link")
+                .data(myTreeLinkData, d => d.target.id);
+            myTreeLink.enter().append("path")
+                .attr("class", "link")
+                .attr("d", d => myLineGenerator([source, d.target]))
+                .merge(myTreeLink)
+                .transition()
+                .duration(500)
+                .attr("d", d => myLineGenerator([d.source, d.target]));
+            myTreeLink.exit().remove();
+            const validArbitraryLinks = myArbitraryLinks.filter(d => myNodesById.has(d.sourceId) && myNodesById.has(d.targetId));
+            const myArbitraryLinkPath = mySvg.selectAll(".arbitrary-link")
+                .data(validArbitraryLinks, d => `${d.sourceId}-${d.targetId}`);
+            myArbitraryLinkPath.enter().append("path")
+                .attr("class", "arbitrary-link")
+                .attr("id", d => `path-${d.sourceId}-${d.targetId}`)
+                .attr("d", d => myLineGenerator([myNodesById.get(d.sourceId), myNodesById.get(d.targetId)]))
+                .merge(myArbitraryLinkPath)
+                .attr("d", d => myLineGenerator([myNodesById.get(d.sourceId), myNodesById.get(d.targetId)]));
+            const myArbitraryLinkText = mySvg.selectAll(".line-text")
+                .data(validArbitraryLinks, d => `text-${d.sourceId}-${d.targetId}`);
+            myArbitraryLinkText.enter().append("text")
+                .attr("class", "line-text")
+                .merge(myArbitraryLinkText)
+                .html(d => `<textPath href="#path-${d.sourceId}-${d.targetId}" startOffset="50%">${d.joiningFact}</textPath>`);
+            myArbitraryLinkText.exit().remove();
+            const myNode = mySvg.selectAll(".node")
+                .data(myNodeData, d => d.id);
+            const myNodeEnter = myNode.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${source.x0},${source.y0})`)
+                .on("click", myClickNode)
+                .on("mouseover", (event, d) => {
+                    d3.select(event.currentTarget).select("circle").style("stroke", "cyan");
+                    if (d.data.fact) {
+                        myFactDisplayArea.value = d.data.fact;
+                        myFactDialog.style.display = "block";
+                       // myFactDialog.style.left = (event.pageX + 10) + 'px';
+                      // myFactDialog.style.top = (event.pageY - myFactDialog.offsetHeight - 10) + 'px';
+                    }
+                })
+                .on("mouseout", (event) => {
+                    d3.select(event.currentTarget).select("circle").style("stroke", "steelblue");
+                   // myFactDialog.style.display = "none";
+                });
+            myNodeEnter.append("circle")
+                .attr("r", 10)
+                .style("fill", "#69a3b2")
+                .style("stroke", "steelblue")
+                .style("stroke-width", "2px");
+            myNodeEnter.append("text")
+                .attr("dy", "0.31em")
+                .attr("x", d => d.children ? -15 : 15)
+                .attr("text-anchor", d => d.children ? "end" : "start")
+                .text(d => d.data.name)
+                .style("fill", "#2c3e50");
+            const myNodeUpdate = myNodeEnter.merge(myNode);
+            myNodeUpdate.transition()
+                .duration(500)
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+            myNodeUpdate.call(myDragBehavior);
+            myNode.exit().remove();
+            myNodeData.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+        function myDragStart(event, d) {
+            myIsDragging = true;
+            d3.select(this).raise().classed("dragging", true);
+        }
+        function myDragged(event, d) {
+            d.x = event.x;
+            d.y = event.y;
+            d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+        }
+        function myDragEnd(event, d) {
+            myIsDragging = false;
+            d3.select(this).classed("dragging", false);
+            myUpdate(d);
+            myShowMessage(d.data.fact || "No fact available for this node.");
+        }
+        function myClickNode(event, d) {
+            event.stopPropagation();
+            if (myIsDragging) return;
+            if (event.ctrlKey) {
+                const myIndex = mySelectedNodes.indexOf(d);
+                if (myIndex > -1) {
+                    mySelectedNodes.splice(myIndex, 1);
+                    d3.select(event.currentTarget).classed('selected', false).select("circle").style("fill", "#69a3b2");
+                } else {
+                    mySelectedNodes.push(d);
+                    d3.select(event.currentTarget).classed('selected', true).select("circle").style("fill", "crimson");
+                }
+            } else {
+                myUnselectAllNodes();
+                d3.select(event.currentTarget).classed('selected', true).select("circle").style("fill", "crimson");
+                mySelectedNodes.push(d);
+                if (d.data.fact) {
+                    myShowMessage(d.data.fact);
+                } else {
+                    myShowMessage("No fact available for this node. Use the **Ctrl key** to select multiple nodes for adding a line.");
+                }
+            }
+        }
+        function myUnselectAllNodes() {
+            d3.selectAll('.node.selected')
+                .classed('selected', false)
+                .select("circle").style("fill", "#69a3b2");
+            mySelectedNodes = [];
+        }
+        function myShowMessage(message) {
+          //  document.getElementById("myFactDisplayArea").value = message;
+         //   document.getElementById("myDiv01").value = message;
+            console.log(message)
+            
+        }
+        function myShowAddNodeDialog(shouldCloseDialog = true) {
+            if (mySelectedNodes.length === 1) {
+                document.getElementById('myNewNodeParentId').value = mySelectedNodes[0].id;
+                document.getElementById('myNewNodeName').value = '';
+                document.getElementById('myNewNodeFact').value = '';
+                document.getElementById('myAddNodeDialog').style.display = 'block';
+            } else if (mySelectedNodes.length === 0) {
+                myShowMessage("Please select a single node to be the parent of the new node.");
+            } else {
+                myShowMessage("Please select ONLY one node to add a child node to.");
+            }
+        }
+        function myAddNewNode(shouldCloseDialog = true) {
+            const myNewNodeName = document.getElementById('myNewNodeName').value;
+            const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+            const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+            if (!myNewNodeName || !myNewNodeParentId) {
+                myShowMessage("Node Name and Parent ID are required.");
+                return;
+            }
+            const myRawData = myRootNode.descendants().map(d => d.data);
+            const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+            if (!myParentNode) {
+                myShowMessage("Parent node not found with the given ID.");
+                return;
+            }
+            const myParentNodeName = myParentNode.data.name;
+            console.log('myParentNodeName')
+            console.log(myParentNodeName)
+            const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
+            const myNewDataPoint = {
+                id: myNewNodeId,
+                parentId: myNewNodeParentId,
+                name: myNewNodeName,
+                fact: myNewNodeFact || ""
+            };
+            myRawData.push(myNewDataPoint);
+            const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+            myRootNode = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => d.parentId)(myRawData);
+            myTreeLayout(myRootNode);
+            myRootNode.descendants().forEach(d => {
+                const oldPos = myCurrentPositions.get(d.id);
+                if (oldPos) {
+                    d.x = oldPos.x;
+                    d.y = oldPos.y;
+                }
+            });
+            const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
+            if (myNewNode) {
+                myNewNode.x = myParentNode.x + (Math.random() * 300) - 150;
+                myNewNode.y = myParentNode.y + (Math.random() * 70);
+                myNewNode.x0 = myParentNode.x;
+                myNewNode.y0 = myParentNode.y;
+            } else {
+                // Emergency default so we never get "undefined"
+                myNewNode.x = 0;
+                myNewNode.y = 0;
+                myNewNode.x0 = 0;
+                myNewNode.y0 = 0;
+            }
+            console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
+
+            myUpdate(myRootNode);
+          //  document.getElementById('myAddNodeDialog').style.display = 'none';
+          //  myUnselectAllNodes();
+
+              if (shouldCloseDialog) {
+        document.getElementById('myAddNodeDialog').style.display = 'none';
+    }
+            myShowMessage(`Added new node "${myNewNodeName}".`);
+        }
+
+
+async function myAddGenerateNode() {
+    const myParentId = document.getElementById('myNewNodeParentId').value;
+    const myNameInput = document.getElementById('myNewNodeName');
+    const myFactInput = document.getElementById('myNewNodeFact');
+    const myLoops = document.getElementById('myGenerateLoopNumber').value;
+
+    if (!mySession) {
+        myShowMessage("Please load the Gemini Nano model first.");
+        return;
+    }
+
+    if (!myLoops || parseInt(myLoops) <= 0) {
+        myShowMessage("Please enter a valid number of nodes to generate.");
+        return;
+    }
+
+    // Start the generation loop
+    await myGenerateNodesLoop(myParentId, myNameInput, myFactInput, parseInt(myLoops));
+
+    // Close the dialog and reset the state only after the loop is complete
+    document.getElementById('myAddNodeDialog').style.display = 'none';
+    myUnselectAllNodes();
+}
+
+      /*
+       // for the popup to generate facts.
+    async   function myAddGenerateNode() {
+           // alert(document.getElementById('myNewNodeParentId').value)
+            let myLoops = document.getElementById('myGenerateLoopNumber').value;   // for how many times to do this.
+            if (document.getElementById('myNewNodeName').value === ''){
+
+               const myNewNodeParentId = document.getElementById('myNewNodeParentId').value
+              const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+              const myParentNodeName = myParentNode ? myParentNode.data.name : "unknown";
+
+                
+              console.log('document.getElementById(myNewNodeParentId).value')
+              console.log(document.getElementById('myNewNodeParentId').value)
+              
+            console.log('myParentNodeName')
+            console.log(myParentNodeName)
+              
+               const myPrompt = `Generate a one or two word sub concept for the term  ${myParentNodeName}. `;
+             await   myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
+                await myAddGenerateNode();   // recursive when ready. Hopefully this works
+            }
+            else {
+               // easier just generate the fact based on the node name 
+                 const myPrompt = `Generate one short, interesting, and concise fact about ${document.getElementById('myNewNodeName').value}. Do not include any text other than the fact itself.`;
+
+                document.getElementById('myNewNodeFact').value = ''
+               await myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'), myPrompt)
+                myAddNewNode()
+            }
+             // document.getElementById('myNewNodeName').value = '';
+            //  document.getElementById('myNewNodeParentId').value = '';
+            //  document.getElementById('myNewNodeFact').value = '';
+        }
+
+*/
+
+async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
+    for (let i = 0; i < numLoops; i++) {
+        // Step 1: Generate the new node name (sub-concept)
+        nameInput.value = 'Generating name...';
+        const namePrompt = `Generate a one or two word sub-concept for the term ${parentId}.`;
+        const newName = await mySession.promptStreaming(namePrompt, { signal: new AbortController().signal });
+        let generatedName = '';
+        for await (const chunk of newName) {
+            generatedName += chunk;
+        }
+        nameInput.value = generatedName.trim();
+
+        // Step 2: Generate the fact for the new node
+        factInput.value = 'Generating fact...';
+        const factPrompt = `Generate one short, interesting, and concise fact about ${generatedName.trim()}. Do not include any text other than the fact itself.`;
+        const newFact = await mySession.promptStreaming(factPrompt, { signal: new AbortController().signal });
+        let generatedFact = '';
+        for await (const chunk of newFact) {
+            generatedFact += chunk;
+        }
+        factInput.value = generatedFact.trim();
+
+        // Step 3: Add the new node to the graph
+        await myAddNewNode(false); // Pass 'false' to indicate not to close the dialog
+        nameInput.value = '';
+        factInput.value = '';
+    }
+}
+      
+async function myGenerateFact(myInData, myOutFact, myPrompt) {
+    if (mySelectedNodes.length !== 1) {
+        myShowMessage("Please select a single node to generate a fact for.");
+        return;
+    }
+
+    if (!mySession) {
+        myShowMessage("Please load the Gemini Nano model first.");
+        return;
+    }
+
+    const myNodeName = myInData
+   // const myPrompt = `Generate one short, interesting, and concise fact about ${myNodeName}. Do not include any text other than the fact itself.`;
+
+    const myNewNodeFactInput = myOutFact
+    myNewNodeFactInput.value = 'Generating ...';
+    myNewNodeFactInput.disabled = true;
+
+    try {
+        const myStream = await mySession.promptStreaming(myPrompt);
+        let myFact = '';
+        for await (const myChunk of myStream) {
+            myFact += myChunk;
+            myNewNodeFactInput.value = myFact;
+        }
+        myShowMessage(`Fact generated for "${myNodeName}".`);
+    } catch (error) {
+        myNewNodeFactInput.value = 'Error generating fact.';
+        myShowMessage(`Error generating fact: ${error.message}`);
+    } finally {
+        myNewNodeFactInput.disabled = false;
+    }
+}
+
+      
+        function myShowAddLineDialog() {
+            if (mySelectedNodes.length < 2) {
+                myShowMessage("Please select at least two nodes to add a line.");
+                return;
+            }
+            document.getElementById('myAddLineDialog').style.display = 'block';
+        }
+        function myAddLineWithFact() {
+            const myJoiningFact = document.getElementById('myJoiningFact').value;
+            if (mySelectedNodes.length < 2) {
+                myShowMessage("Please select at least two nodes.");
+                return;
+            }
+            const mySourceNode = mySelectedNodes[0];
+            const myTargetNodes = mySelectedNodes.slice(1);
+            for (const myTargetNode of myTargetNodes) {
+                if (mySourceNode.id === myTargetNode.id) continue;
+                const myExistingLink = myArbitraryLinks.find(
+                    link => (link.sourceId === mySourceNode.id && link.targetId === myTargetNode.id) ||
+                            (link.sourceId === myTargetNode.id && link.targetId === mySourceNode.id)
+                );
+                if (myExistingLink) continue;
+                myArbitraryLinks.push({
+                    sourceId: mySourceNode.id,
+                    targetId: myTargetNode.id,
+                    joiningFact: myJoiningFact
+                });
+            }
+            myUpdate(myRootNode);
+            document.getElementById('myAddLineDialog').style.display = 'none';
+            document.getElementById('myJoiningFact').value = '';
+            myUnselectAllNodes();
+            myShowMessage(`Added a new line.${myJoiningFact ? ` with fact: "${myJoiningFact}"` : ""}`);
+        }
+        function myLoadFile(event) {
+            const myFile = event.target.files[0];
+            if (!myFile) {
+                return;
+            }
+            const myReader = new FileReader();
+            myReader.onload = function(e) {
+                try {
+                    const myJsonContent = JSON.parse(e.target.result);
+                    d3.select("#mySvgContainer g").selectAll("*").remove();
+                    myDrawData(myJsonContent);
+                    myShowMessage("File loaded successfully!");
+                } catch (error) {
+                    myShowMessage("Error loading file. Please ensure it is a valid JSON file.");
+                }
+            };
+            myReader.readAsText(myFile);
+        }
+
+function mySaveData() {
+    // ... (your existing code to prepare mySavedNodes and myDataToSave)
+    const mySavedNodes = myRootNode.descendants().map(d => {
+        return {
+            id: d.id,
+            parentId: d.parent ? d.parent.id : "",
+            name: d.data.name,
+            fact: d.data.fact || "",
+            x: d.x,
+            y: d.y
+        };
+    });
+    const myDataToSave = {
+        nodes: mySavedNodes,
+        links: myArbitraryLinks
+    };
+    const myJson = JSON.stringify(myDataToSave, null, 2);
+
+    // This line will print the formatted JSON string to the browser's console.
+    console.log(myJson);
+
+    // ... (your existing code to create and download the file)
+    const myBlob = new Blob([myJson], { type: "application/json" });
+    const myUrl = URL.createObjectURL(myBlob);
+    const myLink = document.createElement("a");
+    myLink.setAttribute("href", myUrl);
+    myLink.setAttribute("download", "d3_graph_data.json");
+    myLink.style.display = "none";
+    document.body.appendChild(myLink);
+    myLink.click();
+    document.body.removeChild(myLink);
+}
+
+    </script>
+</body>
+</html>
