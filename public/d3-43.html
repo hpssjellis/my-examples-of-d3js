@@ -171,7 +171,7 @@
     <select id="myLayoutSelector" onchange="myChangeLayout()">
         <option value="tree">Tree Layout</option>
         <option value="cluster">Cluster Layout</option>      
-        <option value="force">Force-Directed Graph</option>    
+   <!--     <option value="force">Force-Directed Graph</option>  -->  
         <option value="radial">Radial</option>    
     </select>
     <svg id="mySvgContainer"></svg>
@@ -635,8 +635,9 @@ function myTidyUpGraph(layoutType) {
                 .on("mouseover", (event, d) => {
                     d3.select(event.currentTarget).select("circle").style("stroke", "cyan");
                     if (d.data.fact) {
-                        myFactDisplayArea.value = d.data.fact;
-                        myFactDialog.style.display = "block";
+                        document.getElementById("myShowDiv").textContent = d.data.fact;
+                       // myFactDisplayArea.value = d.data.fact;
+                      //  myFactDialog.style.display = "block";
                        // myFactDialog.style.left = (event.pageX + 10) + 'px';
                       // myFactDialog.style.top = (event.pageY - myFactDialog.offsetHeight - 10) + 'px';
                     }
@@ -699,7 +700,7 @@ function myTidyUpGraph(layoutType) {
                 d3.select(event.currentTarget).classed('selected', true).select("circle").style("fill", "crimson");
                 mySelectedNodes.push(d);
                 if (d.data.fact) {
-                    myShowMessage(d.data.fact);
+                   // myShowMessage(d.data.fact);  // not needed since mouseover does it
                 } else {
                     myShowMessage("No fact available for this node. Use the **Ctrl key** to select multiple nodes for adding a line.");
                 }
