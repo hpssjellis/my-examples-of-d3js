@@ -165,6 +165,7 @@
     <button class="myD3Button" id="mySaveD3Button" onclick="mySaveData()">Save Graph JSON</button>
     <button class="myD3Button" id="myAddD3Button" onclick="myShowAddNodeDialog('')">Add Node</button>
     <button class="myD3Button" id="myAddLineD3Button" onclick="myShowAddLineDialog()">Add Line</button>
+    <button class="myD3Button" id="myDeleteD3Button" onclick="myDeleteSelectedNodes()">Delete Node</button>
     <button class="myD3Button" id="myFitScreenD3Button" onclick="myFitToScreen()">Fit to Screen</button>
     <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph(document.getElementById('myLayoutSelector').value)">Tidy Up</button>
     <select id="myLayoutSelector" onchange="myChangeLayout()">
@@ -425,6 +426,45 @@
             mySvg.attr("transform", event.transform);
         }
 
+        function myDeleteSelectedNodes() {
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
+        return;
+    }
+
+    const myNodesToDelete = mySelectedNodes.map(d => d.id);
+    const myRawData = myRootNode.descendants().map(d => d.data);
+
+    // Filter out the selected nodes and their descendants
+    const myFilteredData = myRawData.filter(d => {
+        // Find if the node or any of its ancestors are selected for deletion
+        let currentNode = d;
+        while (currentNode) {
+            if (myNodesToDelete.includes(currentNode.id)) {
+                return false; // Found a deleted ancestor, so delete this node too
+            }
+            currentNode = myRootNode.descendants().find(n => n.id === currentNode.parentId);
+        }
+        return true; // Keep the node
+    });
+
+    // Also remove any arbitrary links that involve the deleted nodes
+    myArbitraryLinks = myArbitraryLinks.filter(link => 
+        !myNodesToDelete.includes(link.sourceId) && !myNodesToDelete.includes(link.targetId)
+    );
+
+    // Recreate the hierarchical data from the filtered data
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myFilteredData);
+
+    // Call myUpdate to redraw the graph with the new data
+    myUpdate(myRootNode);
+
+    myUnselectAllNodes();
+    myShowMessage(`Deleted ${myNodesToDelete.length} node(s) and their descendants.`);
+}
+
 function myTidyUpGraph(layoutType) {
     if (!myRootNode) return;
 
@@ -443,16 +483,7 @@ function myTidyUpGraph(layoutType) {
     myUpdate(myRootNode);
     myShowMessage(`Graph layout has been reset to ${layoutType}.`);
 }
-        /*
-        function myTidyUpGraph() {
-            if (!myRootNode) return;
-            myTreeLayout(myRootNode);
-            myUpdate(myRootNode);
-            myShowMessage("Graph layout has been reset.");
-        }
 
-
-        */
         function myFitToScreen() {
             const myNodeElements = d3.selectAll(".node").nodes();
             const myLinkElements = d3.selectAll(".link, .arbitrary-link").nodes();
@@ -724,42 +755,7 @@ async function myAddGenerateNode() {
     myUnselectAllNodes();
 }
 
-      /*
-       // for the popup to generate facts.
-    async   function myAddGenerateNode() {
-           // alert(document.getElementById('myNewNodeParentId').value)
-            let myLoops = document.getElementById('myGenerateLoopNumber').value;   // for how many times to do this.
-            if (document.getElementById('myNewNodeName').value === ''){
-
-               const myNewNodeParentId = document.getElementById('myNewNodeParentId').value
-              const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
-              const myParentNodeName = myParentNode ? myParentNode.data.name : "unknown";
-
-                
-              console.log('document.getElementById(myNewNodeParentId).value')
-              console.log(document.getElementById('myNewNodeParentId').value)
-              
-            console.log('myParentNodeName')
-            console.log(myParentNodeName)
-              
-               const myPrompt = `Generate a one or two word sub concept for the term  ${myParentNodeName}. `;
-             await   myGenerateFact(document.getElementById('myNewNodeParentId').value, document.getElementById('myNewNodeName'), myPrompt)
-                await myAddGenerateNode();   // recursive when ready. Hopefully this works
-            }
-            else {
-               // easier just generate the fact based on the node name 
-                 const myPrompt = `Generate one short, interesting, and concise fact about ${document.getElementById('myNewNodeName').value}. Do not include any text other than the fact itself.`;
-
-                document.getElementById('myNewNodeFact').value = ''
-               await myGenerateFact(document.getElementById('myNewNodeName').value, document.getElementById('myNewNodeFact'), myPrompt)
-                myAddNewNode()
-            }
-             // document.getElementById('myNewNodeName').value = '';
-            //  document.getElementById('myNewNodeParentId').value = '';
-            //  document.getElementById('myNewNodeFact').value = '';
-        }
-
-*/
+  
 
 async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
     for (let i = 0; i < numLoops; i++) {
