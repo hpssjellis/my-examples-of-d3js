@@ -127,7 +127,7 @@
 
         
         .my-movable-dialog input, .my-movable-dialog button {
-            display: none;
+            display: block;
             width: 100%;
             margin-bottom: 5px;
         }
@@ -590,7 +590,8 @@ function myTidyUpGraph(layoutType) {
             myUpdate(myRootNode);
         }
         function myUpdate(source) {
-            let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
+        //    let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
+            let myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#e74c3c']);
             const myNodeData = myRootNode.descendants();
             const myTreeLinkData = myRootNode.links();
             const myNodesById = new Map(myNodeData.map(d => [d.id, d]));
