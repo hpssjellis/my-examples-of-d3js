@@ -616,19 +616,19 @@ function myRefreshGraph() {
         }
 
 function myDeleteSelectedNodes() {
-    if (!mySelectedNode) {
-        console.log("⚠️ No node selected for deletion.");
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
         return;
     }
 
-    console.log("🗑️ Deleting node:", mySelectedNode);
+    console.log("🗑️ Deleting node:", mySelectedNodes);
 
     // 1. Remove the node from myNodes
-    myNodes = myNodes.filter(n => n !== mySelectedNode);
+    myNodes = myNodes.filter(n => n !== mySelectedNodes);
 
     // 2. Remove any links connected to that node
     let beforeLinkCount = myLinks.length;
-    myLinks = myLinks.filter(l => l.source !== mySelectedNode && l.target !== mySelectedNode);
+    myLinks = myLinks.filter(l => l.source !== mySelectedNodes && l.target !== mySelectedNodes);
     console.log("🔗 Links before:", beforeLinkCount, "after:", myLinks.length);
 
     // 3. Log the current state of nodes/links
@@ -648,7 +648,7 @@ function myDeleteSelectedNodes() {
     mySimulation.alpha(1).restart();
 
     // 6. Clear the selected node
-    mySelectedNode = null;
+    mySelectedNodes = null;
 }
 
 
