@@ -772,11 +772,18 @@ function myValidateGraph() {
                 .style("stroke-width", "2px");
             myNodeEnter.append("text")
                 .attr("dy", "0.31em")
-                .attr("x", d => d.children ? -15 : 15)
-                .attr("text-anchor", d => d.children ? "end" : "start")
+                .attr("x", 15) // Fixed x-position to the right of the circle
+                .attr("text-anchor", "start") // Fixed text alignment to "start" (left-aligned)
                 .text(d => d.data.name)
                 .style("fill", "#2c3e50");
             const myNodeUpdate = myNodeEnter.merge(myNode);
+            // === CHANGE 2: In the UPDATE/MERGE selection, update the text to keep it current. ===
+            // This also ensures consistent positioning for all nodes.
+            myNodeUpdate.select("text")
+                .attr("x", 15) // Fixed x-position to the right of the circle
+                .attr("text-anchor", "start") // Fixed text alignment
+                .text(d => d.data.name);
+            
             myNodeUpdate.transition()
                 .duration(500)
                 .attr("transform", d => `translate(${d.x},${d.y})`);
