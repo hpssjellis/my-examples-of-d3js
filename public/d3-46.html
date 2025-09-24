@@ -565,7 +565,44 @@ function myRefreshGraph() {
             mySvg.attr("transform", event.transform);
         }
 
+function myDeleteSelectedNodes() {
+    if (!mySelectedNode) {
+        console.log("⚠️ No node selected for deletion.");
+        return;
+    }
 
+    console.log("🗑️ Deleting node:", mySelectedNode);
+
+    // 1. Remove the node from myNodes
+    myNodes = myNodes.filter(n => n !== mySelectedNode);
+
+    // 2. Remove any links connected to that node
+    let beforeLinkCount = myLinks.length;
+    myLinks = myLinks.filter(l => l.source !== mySelectedNode && l.target !== mySelectedNode);
+    console.log("🔗 Links before:", beforeLinkCount, "after:", myLinks.length);
+
+    // 3. Log the current state of nodes/links
+    console.log("📦 Remaining nodes:", myNodes.map(n => n.id || n.name || "?"));
+    console.log("📦 Remaining links:", myLinks.map(l => {
+        return {
+            source: l.source.id || l.source.name || "?",
+            target: l.target.id || l.target.name || "?"
+        };
+    }));
+
+    // 4. Update the simulation
+    mySimulation.nodes(myNodes);
+    mySimulation.force("link").links(myLinks);
+
+    // 5. Restart simulation cleanly
+    mySimulation.alpha(1).restart();
+
+    // 6. Clear the selected node
+    mySelectedNode = null;
+}
+
+
+        /*
 function myDeleteSelectedNodes() {
     if (mySelectedNodes.length === 0) {
         myShowMessage("Please select one or more nodes to delete.");
@@ -593,7 +630,13 @@ function myDeleteSelectedNodes() {
     myUnselectAllNodes();
     myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
 }
-    
+
+
+*/
+
+
+
+        
  function myChangeLayout() {
     const layoutType = document.getElementById('myLayoutSelector').value;
     myTidyUpGraph(layoutType);
