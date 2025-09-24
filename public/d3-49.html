@@ -171,7 +171,8 @@
    <!-- <button class="myD3Button" id="myTidyUpD3Button" onclick="myTidyUpGraph(document.getElementById('myLayoutSelector').value)">Tidy Up</button>  -->
     <select id="myLayoutSelector" onchange="myChangeLayout()">
         <option value="tree">Tree Layout</option>
-        <option value="cluster">Cluster Layout</option>      
+        <option value="cluster">Cluster Layout</option>    
+        <option value="personal">Personal Layout</option>       
    <!--     <option value="force">Force-Directed Graph</option>  -->  
         <option value="radial">Radial</option>    
     </select>
@@ -521,7 +522,52 @@ function myDeleteSelectedNodes() {
 
 */
 
+  function myCustomLayout() {
+    myRefreshGraph();
+    // A constant for vertical spacing. This controls the distance between levels.
+    const verticalSpacing = 40;
+
+    // A constant for horizontal spacing. This is the minimum space between nodes on the same level.
+    const horizontalSpacing = 20;
+
+    // A mapping to track the current x-position for each level.
+    const xPositionsByLevel = new Map();
+
+    // Get all nodes from the graph, sorted by their depth.
+    // This is crucial to ensure we position nodes level by level.
+    const myNodes = myRootNode.descendants().sort((a, b) => a.depth - b.depth);
+
+    // Loop through each node to calculate its new position.
+    myNodes.forEach(d => {
+        // --- Step 1: Calculate the vertical position (y-coordinate) ---
+        // This is based purely on the node's depth.
+        // The root node (depth 0) is at y=0, children at y=100, and so on.
+        d.y = d.depth * verticalSpacing;
+
+        // --- Step 2: Calculate the horizontal position (x-coordinate) ---
+        // We need to avoid overlapping text on the same level.
+        // We'll estimate the width of the node's text label.
+        // A rough estimate: 8 pixels per character, plus a fixed buffer.
+        const nameWidth = d.data.name.length * 8 + 20;
+
+        // Get the last x-position used on this level. If none exists, start at 0.
+        const lastX = xPositionsByLevel.get(d.depth) || 0;
+
+        // The new x-position is the last position plus our estimated width and a buffer.
+        d.x = lastX + (nameWidth / 2) + horizontalSpacing;
+
+        // Store the new x-position for the next node on this level.
+        xPositionsByLevel.set(d.depth, d.x + (nameWidth / 2));
+    });
+
+    // Call your myUpdate function to redraw the graph with the new coordinates.
+    myUpdate(myRootNode);
+
+    myShowMessage("Graph layout has been manually reorganized.");
+}
+
         
+      
     
  function myChangeLayout() {
     const layoutType = document.getElementById('myLayoutSelector').value;
@@ -548,6 +594,12 @@ function myTidyUpGraph(layoutType) {
         myTreeLayout = d3.cluster().size([myWidth, myHeight - 75]);
         myTreeLayout(myRootNode);
     } 
+else if (layoutType === 'personal') {
+        myCustomLayout()
+    } 
+
+
+
     
     myUpdate(myRootNode);
     myShowMessage(`Graph layout has been reset to ${layoutType}.`);
