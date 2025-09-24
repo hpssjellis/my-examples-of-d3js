@@ -618,7 +618,44 @@ function myRefreshGraph() {
         function myZoomed(event) {
             mySvg.attr("transform", event.transform);
         }
+/*
+* This is the corrected function for your tree-based D3.js graph.
+* It correctly removes a node and all of its children.
+*/
+function myDeleteSelectedNodes() {
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
+        return;
+    }
 
+    const myNodesToDelete = new Set();
+    mySelectedNodes.forEach(node => {
+        // Get the node and all its descendants to be deleted
+        node.descendants().forEach(d => myNodesToDelete.add(d.id));
+    });
+
+    const myRawData = myRootNode.descendants().map(d => d.data);
+
+    // Filter out the nodes that are in the set of nodes to be deleted
+    const myFilteredData = myRawData.filter(d => !myNodesToDelete.has(d.id));
+
+    // Also remove any arbitrary links connected to the deleted nodes
+    myArbitraryLinks = myArbitraryLinks.filter(link =>
+        !myNodesToDelete.has(link.sourceId) && !myNodesToDelete.has(link.targetId)
+    );
+
+    // Rebuild the D3 hierarchy with the filtered data
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myFilteredData);
+
+    // Call the update function to redraw the graph
+    myUpdate(myRootNode);
+    myUnselectAllNodes();
+    myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
+}
+
+        /*
 function myDeleteSelectedNodes() {
     if (mySelectedNodes.length === 0) {
         myShowMessage("Please select one or more nodes to delete.");
@@ -654,7 +691,7 @@ function myDeleteSelectedNodes() {
     // 6. Clear the selected node
     mySelectedNodes = null;
 }
-
+*/
 
         /*
 function myDeleteSelectedNodes() {
