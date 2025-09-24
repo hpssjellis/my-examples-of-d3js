@@ -227,6 +227,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         /* Gemini Nano API - Global variables and functions */
+        let horizontalOffset = 0;
         let myNodeIdCounter = 0;
         let mySession = null;
         const myInputPrompt = document.getElementById('myInputPrompt');
@@ -1252,8 +1253,58 @@ async function myAddGenerateNode() {
 }
 
         */
+// Add this line with your other global variables
+let horizontalOffset = 0;
 
+// ...
 
+async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, numLoops) {
+    // Check if it's the start of a new generation session.
+    // This is optional, but helps reset the offset for a new group of children.
+    // If you want all generated nodes to be horizontal, you can remove this `if` block.
+    if (numLoops > 1) {
+        horizontalOffset = 0;
+    }
+
+    for (let i = 0; i < numLoops; i++) {
+        let generatedName = '';
+
+        if (i === 0 && nameInput.value !== '') {
+            generatedName = nameInput.value.trim();
+        } else {
+            nameInput.value = 'Generating name...';
+            const namePrompt = `Generate a one or two word sub-concept for the term ${parentName}.`;
+            const newName = await mySession.promptStreaming(namePrompt, { signal: new AbortController().signal });
+            for await (const chunk of newName) {
+                generatedName += chunk;
+            }
+            nameInput.value = generatedName.trim();
+        }
+
+        factInput.value = 'Generating fact...';
+        const factPrompt = `Generate one short, interesting, and concise fact about ${generatedName}. Do not include any text other than the fact itself.`;
+        const newFact = await mySession.promptStreaming(factPrompt, { signal: new AbortController().signal });
+        let generatedFact = '';
+        for await (const chunk of newFact) {
+            generatedFact += chunk;
+        }
+        factInput.value = generatedFact.trim();
+
+        const nameWidth = generatedName.length * 8 + 40;
+
+        await myAddNewNodeWithOffset(parentId, generatedName, generatedFact, horizontalOffset);
+        
+        // Update the global offset for the next node
+        horizontalOffset += nameWidth + 20;
+        
+        if (i < numLoops - 1) {
+            nameInput.value = '';
+            factInput.value = '';
+        }
+    }
+    myUpdate(myRootNode);
+}
+/*
 async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, numLoops) {
     let horizontalOffset = 0; // Initialize a variable to track horizontal spacing.
 
@@ -1301,7 +1352,7 @@ async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, n
     }
     myUpdate(myRootNode);
 }
-
+*/
       /*
 async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, numLoops) {
     for (let i = 0; i < numLoops; i++) {
