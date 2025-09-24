@@ -534,6 +534,36 @@ function myTidyUpGraph(layoutType) {
                 .duration(750)
                 .call(myZoomBehavior.transform, d3.zoomIdentity.translate(myTranslateX, myTranslateY).scale(myScale));
         }
+
+// Corrected myDrawData function
+function myDrawData(data) {
+    const myRawData = data.nodes;
+    myArbitraryLinks = data.links;
+
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+        
+    // Apply the tree layout to get a starting point for all nodes
+    myTreeLayout(myRootNode);
+
+    // Now, iterate and restore positions from saved data, using the layout's values as a fallback
+    myRootNode.descendants().forEach(d => {
+        const myLoadedData = myRawData.find(item => item.id === d.id);
+        if (myLoadedData && myLoadedData.x !== undefined && myLoadedData.y !== undefined) {
+            // Restore saved position
+            d.x = +myLoadedData.x;
+            d.y = +myLoadedData.y;
+        }
+        // Initialize the old positions for a smooth animation
+        d.x0 = d.x;
+        d.y0 = d.y;
+    });
+
+    myUpdate(myRootNode);
+}
+
+        /*
         function myDrawData(data) {
             const myRawData = data.nodes;
             myArbitraryLinks = data.links;
@@ -550,6 +580,10 @@ function myTidyUpGraph(layoutType) {
             });
             myUpdate(myRootNode);
         }
+
+*/
+
+        
         function myUpdate(source) {
         //    let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
             let myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#800080']);
@@ -696,6 +730,80 @@ function myTidyUpGraph(layoutType) {
                 myShowMessage("Please select ONLY one node to add a child node to.");
             }
         }
+
+// Corrected myAddNewNode function
+function myAddNewNode(shouldCloseDialog = true) {
+    const myNewNodeName = document.getElementById('myNewNodeName').value;
+    const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+    const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+
+    if (!myNewNodeName || !myNewNodeParentId) {
+        myShowMessage("Node Name and Parent ID are required.");
+        return;
+    }
+
+    const myRawData = myRootNode.descendants().map(d => d.data);
+    const myNewNodeId = myNewNodeName.toLowerCase().replace(/\s/g, '');
+
+    const myNewDataPoint = {
+        id: myNewNodeId,
+        parentId: myNewNodeParentId,
+        name: myNewNodeName,
+        fact: myNewNodeFact || ""
+    };
+
+    myRawData.push(myNewDataPoint);
+
+    // Save current positions to restore them later
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+
+    // Rebuild the D3 hierarchy with the new data
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+        
+    // Apply the layout to get initial positions for all nodes, including the new one
+    myTreeLayout(myRootNode);
+
+    // Now, position the new node relative to its parent
+    const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
+    const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+
+    if (myNewNode && myParentNode) {
+        myNewNode.x = myParentNode.x + (Math.random() * 300) - 150;
+        myNewNode.y = myParentNode.y + (Math.random() * 70);
+        myNewNode.x0 = myParentNode.x;
+        myNewNode.y0 = myParentNode.y;
+    } else {
+        // Fallback in case of an issue
+        if (myNewNode) {
+            myNewNode.x = 0;
+            myNewNode.y = 0;
+            myNewNode.x0 = 0;
+            myNewNode.y0 = 0;
+        }
+    }
+
+    // Restore the old positions for all existing nodes
+    myRootNode.descendants().forEach(d => {
+        const oldPos = myCurrentPositions.get(d.id);
+        if (oldPos) {
+            d.x = oldPos.x;
+            d.y = oldPos.y;
+        }
+    });
+
+    myUpdate(myRootNode);
+
+    if (shouldCloseDialog) {
+        document.getElementById('myAddNodeDialog').style.display = 'none';
+        myUnselectAllNodes();
+    }
+    
+    myShowMessage(`Added new node "${myNewNodeName}".`);
+}
+/*
+        
         function myAddNewNode(shouldCloseDialog = true) {
             const myNewNodeName = document.getElementById('myNewNodeName').value;
             const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
@@ -758,6 +866,8 @@ function myTidyUpGraph(layoutType) {
             myShowMessage(`Added new node "${myNewNodeName}".`);
         }
 
+
+        */
 
 async function myAddGenerateNode() {
     const myParentId = document.getElementById('myNewNodeParentId').value;
