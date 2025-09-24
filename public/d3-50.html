@@ -264,6 +264,36 @@ function myEditNode() {
 }
 
 
+function mySaveEditedNode() {
+    const myEditDialog = document.getElementById("myEditNodeDialog");
+    const myNodeIdToEdit = myEditDialog.dataset.nodeId;
+    
+    // Find the node in the current graph data using its ID.
+    const myNodeToEdit = myRootNode.descendants().find(d => d.id === myNodeIdToEdit);
+
+    if (!myNodeToEdit) {
+        myShowMessage("Error: Could not find the node to edit.");
+        return;
+    }
+
+    // Get the new name and fact from the input fields.
+    const myNewName = document.getElementById("myEditNodeName").value;
+    const myNewFact = document.getElementById("myEditNodeFact").value;
+
+    // Update the data object.
+    myNodeToEdit.data.name = myNewName;
+    myNodeToEdit.data.fact = myNewFact;
+    
+    // Hide the dialog and unselect all nodes.
+    myEditDialog.style.display = "none";
+    myUnselectAllNodes();
+
+    // Redraw the graph to show the updated name and fact.
+    myUpdate(myRootNode);
+    
+    myShowMessage(`Node "${myNewName}" has been updated.`);
+}
+
 
         
 function myRefreshGraph() {
