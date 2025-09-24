@@ -1042,6 +1042,9 @@ function myAddNewNode(shouldCloseDialog = true) {
     // 7. If the new node is found, position it correctly and initialize its past position
     if (myNewNode) {
         if (myParentNode) {
+            
+            console.log('myParentNode.x');
+            console.log(myParentNode.x);    
             // Position the new node near its parent
             myNewNode.x = myParentNode.x + (Math.random() * 300) - 150;
             myNewNode.y = myParentNode.y + (Math.random() * 70);
