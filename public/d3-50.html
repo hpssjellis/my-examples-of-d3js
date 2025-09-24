@@ -1033,6 +1033,12 @@ function myAddNewNode(shouldCloseDialog = true) {
     const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
     const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
 
+    
+    console.log('myParentNode');
+    console.log(myParentNode);
+
+
+    
     // 7. If the new node is found, position it correctly and initialize its past position
     if (myNewNode) {
         if (myParentNode) {
