@@ -243,7 +243,72 @@
         let myController = null;
         let myIsProcessing = false;
 
+function myValidateGraph() {
+    console.log("🔍 Running graph validation...");
 
+    let problems = false;
+    let nodeIds = new Set();
+    
+    // Check nodes by iterating through the D3 hierarchy
+    const allNodes = myRootNode.descendants();
+    allNodes.forEach((n, i) => {
+        // Use n.id from the D3 hierarchy
+        if (!("id" in n.data)) {
+            console.warn(`⚠️ Node at index ${i} is missing an id.`, n.data);
+            problems = true;
+        } else if (nodeIds.has(n.id)) {
+            console.warn(`⚠️ Duplicate node id detected: ${n.id}`);
+            problems = true;
+        } else {
+            nodeIds.add(n.id);
+        }
+
+        // Check for invalid x,y coordinates
+        if (isNaN(n.x) || isNaN(n.y)) {
+            console.warn(`⚠️ Node ${n.id} has invalid x,y.`, n);
+            // fix by giving default
+            n.x = n.x || 200;
+            n.y = n.y || 200;
+        }
+    });
+
+    // Check tree links (links from parent to child)
+    const treeLinks = myRootNode.links();
+    treeLinks.forEach((l, i) => {
+        if (!nodeIds.has(l.source.id)) {
+            console.warn(`⚠️ Tree link ${i} has invalid source:`, l.source.id);
+            problems = true;
+        }
+        if (!nodeIds.has(l.target.id)) {
+            console.warn(`⚠️ Tree link ${i} has invalid target:`, l.target.id);
+            problems = true;
+        }
+    });
+
+    // Check arbitrary links
+    myArbitraryLinks.forEach((l, i) => {
+        if (!nodeIds.has(l.sourceId)) {
+            console.warn(`⚠️ Arbitrary link ${i} has invalid source:`, l.sourceId);
+            problems = true;
+        }
+        if (!nodeIds.has(l.targetId)) {
+            console.warn(`⚠️ Arbitrary link ${i} has invalid target:`, l.targetId);
+            problems = true;
+        }
+        if (l.sourceId === l.targetId) {
+            console.warn(`⚠️ Arbitrary link ${i} is a self-link:`, l);
+            problems = true;
+        }
+    });
+
+    if (!problems) {
+        console.log("✅ Graph validation passed!");
+    } else {
+        console.log("⚠️ Graph validation found problems. Check warnings above.");
+    }
+}
+
+        /*
 function myValidateGraph() {
     console.log("🔍 Running graph validation...");
 
@@ -295,6 +360,8 @@ function myValidateGraph() {
     }
 }
 
+
+        */
 
 function myEditNode() {
     // Check if exactly one node is selected to be edited.
