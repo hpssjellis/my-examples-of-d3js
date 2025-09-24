@@ -987,7 +987,8 @@ function myAddNewNodeWithOffset(parentId, name, fact, horizontalOffset) {
     myNodeIdCounter++;
 
     // 3. Create the new data point
-    const myNewNodeId = name.toLowerCase().replace(/\s/g, '') + '-' + myNodeIdCounter;
+  //  const myNewNodeId = name.toLowerCase().replace(/\s/g, '') + '-' + myNodeIdCounter;
+    const myNewNodeId = myNodeIdCounter;
     const myNewDataPoint = {
         id: myNewNodeId,
         parentId: parentId,
