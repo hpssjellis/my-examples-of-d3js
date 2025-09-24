@@ -447,7 +447,50 @@ function myRefreshGraph() {
             mySvg.attr("transform", event.transform);
         }
 
+function myDeleteSelectedNodes() {
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
+        return;
+    }
 
+    const myNodesToDelete = new Set();
+    mySelectedNodes.forEach(node => {
+        node.descendants().forEach(d => myNodesToDelete.add(d.id));
+    });
+
+    const myRawData = myRootNode.descendants().map(d => d.data);
+
+    // Save the current positions of all nodes before deletion
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+
+    const myFilteredData = myRawData.filter(d => !myNodesToDelete.has(d.id));
+
+    myArbitraryLinks = myArbitraryLinks.filter(link =>
+        !myNodesToDelete.has(link.sourceId) && !myNodesToDelete.has(link.targetId)
+    );
+
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myFilteredData);
+
+    // Reapply the saved positions to the remaining nodes
+    myRootNode.descendants().forEach(d => {
+        const oldPos = myCurrentPositions.get(d.id);
+        if (oldPos) {
+            d.x = oldPos.x;
+            d.y = oldPos.y;
+        }
+    });
+
+    // Call validation to clean up any stragglers, then update
+   // myValidateGraph();
+    myUpdate(myRootNode);
+    myUnselectAllNodes();
+    myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
+}
+
+/*
+        
 function myDeleteSelectedNodes() {
     if (mySelectedNodes.length === 0) {
         myShowMessage("Please select one or more nodes to delete.");
@@ -475,6 +518,10 @@ function myDeleteSelectedNodes() {
     myUnselectAllNodes();
     myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
 }
+
+*/
+
+        
     
  function myChangeLayout() {
     const layoutType = document.getElementById('myLayoutSelector').value;
