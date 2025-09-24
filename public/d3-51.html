@@ -719,14 +719,14 @@ function myDrawData(data) {
     myArbitraryLinks = data.links;
 
     myRootNode = d3.stratify()
-        .id(d => d.id)
+        .id(d => d.id.toString()) // Ensure ID is always a string
         .parentId(d => d.parentId)(myRawData);
     
     // Call the function to find the highest number from existing IDs
     // and set the global counter to that value.
     myNodeIdCounter = findHighestIdNumber();
     console.log('myNodeIdCounter')
-    console.log(myNodeIdCounter) 
+    console.log(myNodeIdCounter)
     // Apply the tree layout to get a starting point for all nodes
     myTreeLayout(myRootNode);
 
@@ -1100,19 +1100,13 @@ function myAddNewNodeWithOffset(parentId, name, fact, horizontalOffset) {
 // Add this line with your other global variables
 let horizontalOffset = 0;
 
-// ...
 
 async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, numLoops) {
-    // Check if it's the start of a new generation session.
-    // This is optional, but helps reset the offset for a new group of children.
-    // If you want all generated nodes to be horizontal, you can remove this `if` block.
-    if (numLoops > 1) {
-        horizontalOffset = 0;
-    }
+    let parentNode = myRootNode.descendants().find(d => d.id == parentId);
+    let existingChildrenCount = parentNode.children ? parentNode.children.length : 0;
 
     for (let i = 0; i < numLoops; i++) {
         let generatedName = '';
-
         if (i === 0 && nameInput.value !== '') {
             generatedName = nameInput.value.trim();
         } else {
@@ -1134,26 +1128,45 @@ async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, n
         }
         factInput.value = generatedFact.trim();
 
-        const nameWidth = generatedName.length * 8 + 40;
+        const myRawData = myRootNode.descendants().map(d => d.data);
+        const newId = ++myNodeIdCounter;
 
-        await myAddNewNodeWithOffset(parentId, generatedName, generatedFact, horizontalOffset);
+        myRawData.push({
+            id: newId.toString(), // Ensure ID is a string
+            parentId: parentId,
+            name: generatedName,
+            fact: generatedFact || ""
+        });
         
-        // Update the global offset for the next node
-        horizontalOffset += nameWidth + 20;
+        const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+
+        myRootNode = d3.stratify()
+            .id(d => d.id)
+            .parentId(d => d.parentId)(myRawData);
         
+        myTreeLayout(myRootNode);
+
+        myRootNode.descendants().forEach(d => {
+            const oldPos = myCurrentPositions.get(d.id);
+            if (oldPos) {
+                d.x = oldPos.x;
+                d.y = oldPos.y;
+                d.x0 = d.x;
+                d.y0 = d.y;
+            }
+        });
+        
+        myUpdate(myRootNode);
+
         if (i < numLoops - 1) {
             nameInput.value = '';
             factInput.value = '';
         }
     }
-    myUpdate(myRootNode);
+    document.getElementById('myAddNodeDialog').style.display = 'none';
+    myUnselectAllNodes();
+    myShowMessage(`Added ${numLoops} new node(s) to "${parentName}".`);
 }
-
-
-
-
-
-
       
 async function myGenerateFact(myInData, myOutFact, myPrompt) {
     if (mySelectedNodes.length !== 1) {
