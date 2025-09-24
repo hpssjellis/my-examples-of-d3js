@@ -263,6 +263,75 @@ function myValidateGraph() {
             nodeIds.add(n.id);
         }
 
+        // Check for invalid x,y coordinates and fix them
+        if (isNaN(n.x)) {
+            console.warn(`⚠️ Node ${n.id} has invalid x coordinate. Fixing to 200.`);
+            n.x = 200;
+        }
+        if (isNaN(n.y)) {
+            console.warn(`⚠️ Node ${n.id} has invalid y coordinate. Fixing to 200.`);
+            n.y = 200;
+        }
+    });
+
+    // Check tree links (links from parent to child)
+    const treeLinks = myRootNode.links();
+    treeLinks.forEach((l, i) => {
+        if (!nodeIds.has(l.source.id)) {
+            console.warn(`⚠️ Tree link ${i} has invalid source:`, l.source.id);
+            problems = true;
+        }
+        if (!nodeIds.has(l.target.id)) {
+            console.warn(`⚠️ Tree link ${i} has invalid target:`, l.target.id);
+            problems = true;
+        }
+    });
+
+    // Check arbitrary links
+    myArbitraryLinks.forEach((l, i) => {
+        if (!nodeIds.has(l.sourceId)) {
+            console.warn(`⚠️ Arbitrary link ${i} has invalid source:`, l.sourceId);
+            problems = true;
+        }
+        if (!nodeIds.has(l.targetId)) {
+            console.warn(`⚠️ Arbitrary link ${i} has invalid target:`, l.targetId);
+            problems = true;
+        }
+        if (l.sourceId === l.targetId) {
+            console.warn(`⚠️ Arbitrary link ${i} is a self-link:`, l);
+            problems = true;
+        }
+    });
+
+    if (!problems) {
+        console.log("✅ Graph validation passed!");
+    } else {
+        console.log("⚠️ Graph validation found problems. Check warnings above.");
+    }
+}
+
+
+        /*
+function myValidateGraph() {
+    console.log("🔍 Running graph validation...");
+
+    let problems = false;
+    let nodeIds = new Set();
+    
+    // Check nodes by iterating through the D3 hierarchy
+    const allNodes = myRootNode.descendants();
+    allNodes.forEach((n, i) => {
+        // Use n.id from the D3 hierarchy
+        if (!("id" in n.data)) {
+            console.warn(`⚠️ Node at index ${i} is missing an id.`, n.data);
+            problems = true;
+        } else if (nodeIds.has(n.id)) {
+            console.warn(`⚠️ Duplicate node id detected: ${n.id}`);
+            problems = true;
+        } else {
+            nodeIds.add(n.id);
+        }
+
         // Check for invalid x,y coordinates
         if (isNaN(n.x) || isNaN(n.y)) {
             console.warn(`⚠️ Node ${n.id} has invalid x,y.`, n);
@@ -308,6 +377,8 @@ function myValidateGraph() {
     }
 }
 
+
+        */
         /*
 function myValidateGraph() {
     console.log("🔍 Running graph validation...");
@@ -715,7 +786,7 @@ function myDeleteSelectedNodes() {
     myRootNode = d3.stratify()
         .id(d => d.id)
         .parentId(d => d.parentId)(myFilteredData);
-
+    myValidateGraph();
     // Call the update function to redraw the graph
     myUpdate(myRootNode);
     myUnselectAllNodes();
@@ -820,7 +891,7 @@ function myTidyUpGraph(layoutType) {
         myTreeLayout = d3.cluster().size([myWidth, myHeight - 75]);
         myTreeLayout(myRootNode);
     } 
-    
+     myValidateGraph();
     myUpdate(myRootNode);
     myShowMessage(`Graph layout has been reset to ${layoutType}.`);
 }
@@ -899,6 +970,7 @@ function findHighestIdNumber() {
                 d.x0 = d.x;
                 d.y0 = d.y;
             });
+             myValidateGraph();
             myUpdate(myRootNode);
         }
         function myUpdate(source) {
@@ -1119,7 +1191,7 @@ function myAddNewNode(shouldCloseDialog = true) {
     }
     
   //  console.log("New node:", myNewNodeId, "coords:", myNewNode?.x, myNewNode?.y);
-
+    myValidateGraph();
     myUpdate(myRootNode);
     
     if (shouldCloseDialog) {
@@ -1326,6 +1398,7 @@ async function myGenerateFact(myInData, myOutFact, myPrompt) {
                     joiningFact: myJoiningFact
                 });
             }
+            myValidateGraph();
             myUpdate(myRootNode);
             document.getElementById('myAddLineDialog').style.display = 'none';
             document.getElementById('myJoiningFact').value = '';
