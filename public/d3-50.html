@@ -1115,12 +1115,17 @@ async function myAddGenerateNode() {
 }
 
 function myAddNewNodeWithOffset(parentId, name, fact, horizontalOffset) {
+    console.log("--- Starting myAddNewNodeWithOffset ---");
+    console.log("Parent ID:", parentId, "Name:", name, "Horizontal Offset:", horizontalOffset);
+    
     // 1. Find the parent node
     const myParentNode = myRootNode.descendants().find(d => d.id === parentId);
     if (!myParentNode) {
         myShowMessage("Parent node not found. Cannot add new node.");
+        console.error("Error: Parent node with ID '" + parentId + "' not found.");
         return;
     }
+    console.log("Found parent node:", myParentNode.data.name, "at coords:", myParentNode.x, myParentNode.y);
 
     // 2. Increment the ID counter
     myNodeIdCounter++;
@@ -1133,11 +1138,12 @@ function myAddNewNodeWithOffset(parentId, name, fact, horizontalOffset) {
         name: name,
         fact: fact || ""
     };
+    console.log("New node data created:", myNewDataPoint);
 
     // 4. Push the new node data to the raw data array
     const myRawData = myRootNode.descendants().map(d => d.data);
     myRawData.push(myNewDataPoint);
-
+    
     // 5. Rebuild the D3 hierarchy and restore positions for existing nodes
     const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
     myRootNode = d3.stratify()
@@ -1150,15 +1156,18 @@ function myAddNewNodeWithOffset(parentId, name, fact, horizontalOffset) {
             d.y = oldPos.y;
         }
     });
+    console.log("Hierarchy rebuilt and old positions restored.");
 
-    // 6. NOW, position the new node using the horizontal offset
+    // 6. Position the new node using the horizontal offset
     const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
     if (myNewNode) {
         myNewNode.x = myParentNode.x + horizontalOffset;
         myNewNode.y = myParentNode.y + 100; // Fixed vertical distance
         myNewNode.x0 = myParentNode.x;
         myNewNode.y0 = myParentNode.y;
+        console.log("New node positioned at calculated coords:", myNewNode.x, myNewNode.y);
     }
+    console.log("--- End of myAddNewNodeWithOffset ---");
 }
 
         /*
