@@ -384,14 +384,14 @@ function myRefreshGraph() {
         const myLineGenerator = d3.line().x(d => d.x).y(d => d.y);
         const myDefaultData = {
             nodes: [
-                { id: "food", parentId: "", name: "Food", fact: "" },
-                { id: "meat", parentId: "food", name: "Meat", fact: "" },
-                { id: "carbs", parentId: "food", name: "Carbs", fact: "" },
-                { id: "salmon", parentId: "meat", name: "Salmon", fact: "" },
-                { id: "steak", parentId: "meat", name: "Steak", fact: "" },
-                { id: "chicken", parentId: "meat", name: "Chicken", fact: "Chickens can fly, but only for short distances. The chicken is the closest living relative of the T-rex." },
-                { id: "round", parentId: "steak", name: "Round", fact: "" },
-                { id: "tbone", parentId: "steak", name: "T-Bone", fact: "" }
+                { id: "1", parentId: "", name: "Food", fact: "stuff about food" },
+                { id: "2", parentId: "1", name: "Meat", fact: "stuff about meat" },
+                { id: "3", parentId: "1", name: "Carbs", fact: "facts about carbs" },
+                { id: "4", parentId: "2", name: "Salmon", fact: "facts about salmon" },
+                { id: "5", parentId: "2", name: "Steak", fact: "facts about steak" },
+                { id: "6", parentId: "2", name: "Chicken", fact: "Chickens can fly, but only for short distances. The chicken is the closest living relative of the T-rex." },
+                { id: "7", parentId: "5", name: "Round", fact: "Facts about round" },
+                { id: "8", parentId: "5", name: "T-Bone", fact: "Facts about t-bone" }
             ],
             links: []
         };
