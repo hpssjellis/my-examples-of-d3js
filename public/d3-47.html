@@ -536,6 +536,32 @@ function myTidyUpGraph(layoutType) {
                 .call(myZoomBehavior.transform, d3.zoomIdentity.translate(myTranslateX, myTranslateY).scale(myScale));
         }
 
+        function findHighestIdNumber() {
+    let maxId = 0;
+    // Get all the nodes currently in the graph.
+    const allNodes = myRootNode.descendants();
+    
+    // Loop through each node.
+    allNodes.forEach(node => {
+        // A regular expression to find one or more digits at the end of the string.
+        const match = node.id.match(/\d+$/);
+        
+        // If a number is found, convert it to an integer and check if it's the new highest.
+        if (match) {
+            const idNumber = parseInt(match[0]);
+            if (idNumber > maxId) {
+                maxId = idNumber;
+            }
+        }
+    });
+    
+    return maxId;
+}
+
+
+
+        
+
 // Corrected myDrawData function
 function myDrawData(data) {
     const myRawData = data.nodes;
