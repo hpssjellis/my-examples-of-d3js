@@ -930,7 +930,7 @@ function myAddNewNode(shouldCloseDialog = true) {
     const myRawData = myRootNode.descendants().map(d => d.data);
     
     // 2. Generate a unique ID using the sanitized name and the counter.
-    const myNewNodeId = myNodeIdCounter;
+    const myNewNodeId = myNodeIdCounter.toString();
     
     const myNewDataPoint = {
         id: myNewNodeId,
