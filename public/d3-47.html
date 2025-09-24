@@ -569,28 +569,20 @@ function myDrawData(data) {
     myUpdate(myRootNode);
 }
 
-        /*
-        function myDrawData(data) {
-            const myRawData = data.nodes;
-            myArbitraryLinks = data.links;
-            myRootNode = d3.stratify()
-                .id(d => d.id)
-                .parentId(d => d.parentId)(myRawData);
-            myTreeLayout(myRootNode);
-            myRootNode.descendants().forEach(d => {
-                const myLoadedData = myRawData.find(item => item.id === d.id);
-                d.x = myLoadedData && myLoadedData.x ? +myLoadedData.x : d.x;
-                d.y = myLoadedData && myLoadedData.y ? +myLoadedData.y : d.y;
-                d.x0 = d.x;
-                d.y0 = d.y;
-            });
-            myUpdate(myRootNode);
-        }
-
-*/
+// Add this function anywhere in your script
+function myValidateGraph() {
+    if (!myRootNode) return;
+    myRootNode.descendants().forEach(d => {
+        if (isNaN(d.x) || d.x === undefined) d.x = 0;
+        if (isNaN(d.y) || d.y === undefined) d.y = 0;
+        if (isNaN(d.x0) || d.x0 === undefined) d.x0 = d.x;
+        if (isNaN(d.y0) || d.y0 === undefined) d.y0 = d.y;
+    });
+}
 
         
         function myUpdate(source) {
+            myValidateGraph()
         //    let myColorScale = d3.scaleOrdinal(d3.schemeCategory10);
             let myColorScale = d3.scaleOrdinal(['#69a3b2', '#7dd95c', '#c7c7c7', '#2c3e50', '#f39c12', '#800080']);
             const myNodeData = myRootNode.descendants();
