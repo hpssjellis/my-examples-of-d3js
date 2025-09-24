@@ -883,7 +883,41 @@ function myAddNewNode(shouldCloseDialog = true) {
     myShowMessage(`Added new node "${myNewNodeName}".`);
 }
 
+// Corrected myAddGenerateNode function
+async function myAddGenerateNode() {
+    const myParentId = document.getElementById('myNewNodeParentId').value;
+    const myNameInput = document.getElementById('myNewNodeName');
+    const myFactInput = document.getElementById('myNewNodeFact');
+    const myLoops = document.getElementById('myGenerateLoopNumber').value;
 
+    if (!mySession) {
+        myShowMessage("Please load the Gemini Nano model first.");
+        return;
+    }
+
+    if (!myLoops || parseInt(myLoops) <= 0) {
+        myShowMessage("Please enter a valid number of nodes to generate.");
+        return;
+    }
+
+    // Find the parent node to get its name
+    const myParentNode = myRootNode.descendants().find(d => d.id === myParentId);
+    if (!myParentNode) {
+        myShowMessage("Parent node not found. Please select a node before generating.");
+        return;
+    }
+    const myParentName = myParentNode.data.name;
+
+    // Start the generation loop
+    await myGenerateNodesLoop(myParentName, myParentId, myNameInput, myFactInput, parseInt(myLoops));
+
+    // Close the dialog and reset the state only after the loop is complete
+    document.getElementById('myAddNodeDialog').style.display = 'none';
+    myUnselectAllNodes();
+}
+
+        
+/*
 async function myAddGenerateNode() {
     const myParentId = document.getElementById('myNewNodeParentId').value;
     const myNameInput = document.getElementById('myNewNodeName');
@@ -908,8 +942,49 @@ async function myAddGenerateNode() {
   //  myUnselectAllNodes();
 }
 
-  
+        */
 
+async function myGenerateNodesLoop(parentName, parentId, nameInput, factInput, numLoops) {
+    for (let i = 0; i < numLoops; i++) {
+        let generatedName = '';
+
+        // Only check for user-provided input on the first loop iteration (i === 0).
+        if (i === 0 && nameInput.value !== '') {
+            generatedName = nameInput.value.trim();
+        } else {
+            // Generate a name for all other iterations.
+            nameInput.value = 'Generating name...';
+            const namePrompt = `Generate a one or two word sub-concept for the term ${parentName}.`;
+            const newName = await mySession.promptStreaming(namePrompt, { signal: new AbortController().signal });
+            for await (const chunk of newName) {
+                generatedName += chunk;
+            }
+            nameInput.value = generatedName.trim();
+        }
+        
+        // Generate the fact for the name (either pre-entered or newly generated).
+        factInput.value = 'Generating fact...';
+        const factPrompt = `Generate one short, interesting, and concise fact about ${generatedName}. Do not include any text other than the fact itself.`;
+        const newFact = await mySession.promptStreaming(factPrompt, { signal: new AbortController().signal });
+        let generatedFact = '';
+        for await (const chunk of newFact) {
+            generatedFact += chunk;
+        }
+        factInput.value = generatedFact.trim();
+
+        // Add the new node to the graph.
+        await myAddNewNode(false);
+        
+        // Reset inputs for the next loop iteration.
+        if (i < numLoops - 1) {
+            nameInput.value = '';
+            factInput.value = '';
+        }
+    }
+    myUpdate(myRootNode);
+}
+        
+/*
 async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
     for (let i = 0; i < numLoops; i++) {
         // Step 1: Generate the new node name (sub-concept)
@@ -939,6 +1014,8 @@ async function myGenerateNodesLoop(parentId, nameInput, factInput, numLoops) {
         myRefreshGraph();
     }
 }
+
+        */
       
 async function myGenerateFact(myInData, myOutFact, myPrompt) {
     if (mySelectedNodes.length !== 1) {
