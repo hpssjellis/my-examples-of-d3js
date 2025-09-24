@@ -1171,7 +1171,86 @@ function findHighestIdNumber() {
             }
         }
 
+function myAddNewNode(shouldCloseDialog = true) {
+    // 1. Increment the counter to get a unique number for the new node.
+    myNodeIdCounter++;
+    
+    const myNewNodeName = document.getElementById('myNewNodeName').value;
+    const myNewNodeParentId = document.getElementById('myNewNodeParentId').value;
+    const myNewNodeFact = document.getElementById('myNewNodeFact').value;
+    
+    if (!myNewNodeName || !myNewNodeParentId) {
+        myShowMessage("Node Name and Parent ID are required.");
+        return;
+    }
+    
+    const myRawData = myRootNode.descendants().map(d => d.data);
+    
+    // 2. Generate a unique ID using the sanitized name and the counter.
+    const myNewNodeId = myNodeIdCounter;
+    
+    const myNewDataPoint = {
+        id: myNewNodeId,
+        parentId: myNewNodeParentId,
+        name: myNewNodeName,
+        fact: myNewNodeFact || ""
+    };
+    
+    myRawData.push(myNewDataPoint);
+    
+    // 3. Save the current positions of all nodes before the hierarchy is rebuilt
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+    
+    // 4. Rebuild the D3 hierarchy with the new node
+    myRootNode = d3.stratify()
+        .id(d => d.id)
+        .parentId(d => d.parentId)(myRawData);
+        
+    // 5. Apply the tree layout to calculate initial positions for all nodes, including the new one.
+    myTreeLayout(myRootNode);
 
+    // 6. Find the new node and its parent.
+    const myNewNode = myRootNode.descendants().find(d => d.id === myNewNodeId);
+    const myParentNode = myRootNode.descendants().find(d => d.id === myNewNodeParentId);
+
+    // 7. If the new node is found, position it correctly and initialize its past position
+    if (myNewNode) {
+        if (myParentNode) {
+            // Position the new node near its parent
+            myNewNode.x = myParentNode.x + (Math.random() * 300) - 150;
+            myNewNode.y = myParentNode.y + (Math.random() * 70);
+        } else {
+            // Default position if parent is not found (this should not happen with validation)
+            myNewNode.x = 0;
+            myNewNode.y = 0;
+        }
+        // Initialize x0 and y0 for the new node to prevent a jerky animation on its first draw
+        myNewNode.x0 = myNewNode.x;
+        myNewNode.y0 = myNewNode.y;
+    }
+
+    // 8. Restore the old positions for all existing nodes
+    myRootNode.descendants().forEach(d => {
+        const oldPos = myCurrentPositions.get(d.id);
+        if (oldPos) {
+            d.x = oldPos.x;
+            d.y = oldPos.y;
+        }
+    });
+
+    // 9. Call the validation and update the graph
+    myValidateGraph();
+    myUpdate(myRootNode);
+    
+    if (shouldCloseDialog) {
+        document.getElementById('myAddNodeDialog').style.display = 'none';
+        myUnselectAllNodes();
+    }
+    
+    myShowMessage(`Added new node "${myNewNodeName}".`);
+}
+
+        /*
 function myAddNewNode(shouldCloseDialog = true) {
     // 1. Increment the counter to get a unique number for the new node.
     myNodeIdCounter++;
@@ -1244,7 +1323,7 @@ function myAddNewNode(shouldCloseDialog = true) {
     
     myShowMessage(`Added new node "${myNewNodeName}".`);
 }
-
+*/
 
 /*
         
