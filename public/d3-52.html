@@ -385,6 +385,23 @@ function myRefreshGraph() {
                     const mySanitizedText = myLastGeneratedText.substring(myStartIndex, myEndIndex + 1);
                     try {
                         const myGeneratedJSON = JSON.parse(mySanitizedText);
+                        
+                        const mySanitizedNodes = myGeneratedJSON.nodes.map(node => {
+                            // Ensure 'id' is a string
+                            node.id = String(node.id);
+                            // Ensure 'parentId' is a string or null/empty string
+                            if (node.parentId !== null && node.parentId !== undefined) {
+                                node.parentId = String(node.parentId);
+                            }
+                            return node;
+                        });
+                        // Create a new data object with the sanitized nodes
+                        const mySanitizedJSONData = {
+                            nodes: mySanitizedNodes,
+                            links: myGeneratedJSON.links
+                        };
+
+                        
                         d3.select("#mySvgContainer g").selectAll("*").remove();
                         myDrawData(myGeneratedJSON);
                     } catch (e) {
