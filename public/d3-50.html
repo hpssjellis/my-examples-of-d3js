@@ -456,6 +456,63 @@ function myDeleteSelectedNodes() {
 
     const myNodesToDelete = new Set();
     mySelectedNodes.forEach(node => {
+        // Collect all selected nodes and their descendants for deletion
+        node.descendants().forEach(d => myNodesToDelete.add(d.id));
+    });
+
+    // Get the current flat data and save positions
+    const myRawData = myRootNode.descendants().map(d => d.data);
+    const myCurrentPositions = new Map(myRootNode.descendants().map(d => [d.id, { x: d.x, y: d.y }]));
+
+    // Filter the raw data to remove all nodes marked for deletion.
+    const myFilteredData = myRawData.filter(d => !myNodesToDelete.has(d.id));
+
+    // Filter arbitrary links to remove any that connect to a deleted node.
+    myArbitraryLinks = myArbitraryLinks.filter(link =>
+        !myNodesToDelete.has(link.sourceId) && !myNodesToDelete.has(link.targetId)
+    );
+    
+    // Attempt to rebuild the hierarchy from the filtered data.
+    // This is the critical step to re-establish the tree.
+    try {
+        myRootNode = d3.stratify()
+            .id(d => d.id)
+            .parentId(d => d.parentId)(myFilteredData);
+
+        // Reapply saved positions to the remaining nodes
+        myRootNode.descendants().forEach(d => {
+            const oldPos = myCurrentPositions.get(d.id);
+            if (oldPos) {
+                d.x = oldPos.x;
+                d.y = oldPos.y;
+            }
+        });
+
+        // Update the graph with the new hierarchy.
+        myUpdate(myRootNode);
+
+    } catch (e) {
+        myShowMessage("Could not rebuild graph hierarchy. A child node may have lost its parent.");
+        console.error(e);
+        return;
+    }
+
+    myUnselectAllNodes();
+    myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
+}
+
+
+
+        
+/*
+function myDeleteSelectedNodes() {
+    if (mySelectedNodes.length === 0) {
+        myShowMessage("Please select one or more nodes to delete.");
+        return;
+    }
+
+    const myNodesToDelete = new Set();
+    mySelectedNodes.forEach(node => {
         node.descendants().forEach(d => myNodesToDelete.add(d.id));
     });
 
@@ -489,7 +546,7 @@ function myDeleteSelectedNodes() {
     myUnselectAllNodes();
     myShowMessage(`Deleted ${myNodesToDelete.size} node(s) and their descendants.`);
 }
-
+*/
 /*
         
 function myDeleteSelectedNodes() {
