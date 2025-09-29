@@ -97,12 +97,16 @@
     <!-- Select Box -->
     <select id="itemSelectBox" size="1" onChange="{ myLoadQuestion(this.value); }">
       <!-- Options will be populated dynamically -->
-    </select>
+    </select><br>
+     Hint: <input type=text id="myHint"> <br>
+
       
-      <label for="storedStatement">Stored Statement:</label>
+      <div style="display:block"
+      <label for="storedStatement">Stored Statement hide later:</label>
       <textarea id="storedStatement" rows="3" placeholder="Enter the stored statement..."
         style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 5px;"></textarea>
-
+      </div>
+      
       <label for="userTest">User Test:</label>
       <textarea id="userTest" rows="3" placeholder="Enter the user's test statement..."
         style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 5px;"></textarea>
@@ -353,11 +357,13 @@
 function myLoadQuestion(myPassedValue) {
   console.log('myPassedValue')
   console.log(myPassedValue)
-  const myItem = items.get(parseInt(myPassedValue));
+  const myItem = items.get(parseInt(myPassedValue));  // id needs to be an integer
   console.log('myItem');
   console.log(myItem);
   if (myItem) {
     document.getElementById('storedStatement').value = myItem.longDescription || '';
+    document.getElementById('myHint').value = myItem.content || '';
+    
   } else {
     console.warn('Item not found with ID:', myPassedValue);
   }
