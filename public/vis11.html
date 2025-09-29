@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>vis.js: Timeline — Tooltip and Range Points Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/vis-timeline@7.7.3/styles/vis-timeline-graph2d.min.css">
+    <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+</head>
+<body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height:1.35; margin:16px;">
+
+  <h1 style="margin:0 0 8px 0;">vis.js Timeline Demo with Range Points</h1>
+  <p style="margin:0 0 16px 0;">
+    **Range items now have start/end points** and the native tooltip returns on mouseover.
+  </p>
+
+    <h2 style="margin:24px 0 8px 0;">Timeline</h2>
+  <div id="myTimeline" style="width:100%; height:240px; border:1px solid #ccc; border-radius:10px;"></div>
+  <div style="margin:8px 0;">
+    <input type="button" value="Add Today Item" onclick="myAddTodayItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer;">
+    <input type="button" value="Focus Latest" onclick="myFocusLatestTimelineItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom In" onclick="myTimelineZoomIn()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom Out" onclick="myTimelineZoomOut()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+  </div>
+
+  <script>
+    // ========== TIMELINE ==========
+    let myTimelineInstance, myTimelineItems;
+
+    // Helper function to format dates for the tooltip
+    function myFormatDate(myDateString) {
+      return myDateString ? new Date(myDateString).toISOString().slice(0, 10) : 'N/A';
+    }
+
+    function myGetTooltipText(myItem) {
+      let myTitleText = `${myItem.content}, ${myFormatDate(myItem.start)}`;
+      
+      if (myItem.end) {
+        myTitleText += ` to ${myFormatDate(myItem.end)}`;
+      } else {
+        myTitleText += ``;
+      }
+      return myTitleText;
+    }
+
+    function myInitTimeline() {
+      const myContainer = document.getElementById('myTimeline');
+      
+      // Prepare the base data
+      const myRawItems = [
+        // FIX: Added type: 'point'
+        { id: 1, content: 'Kickoff', start: '2025-09-01', type: 'point' }, 
+        // Range item with type: 'box'
+        { id: 2, content: 'Prototype', start: '2025-09-05', end: '2025-09-08', type: 'box' }, 
+        // FIX: Added type: 'point'
+        { id: 3, content: 'Review', start: '2025-09-10', type: 'point' }
+      ];
+      
+      // Add 'title' property for the native mouseover tooltip 
+      // AND explicitly set style to 'dot' for point items (the fix)
+      const myItemsWithTooltipAndStyle = myRawItems.map(myItem => {
+        return { 
+          ...myItem, 
+          title: myGetTooltipText(myItem),
+          // 💡 Fix: If it's a 'point' type, force style 'dot' for the axis marker
+          style: myItem.type === 'point' ? 'dot' : undefined
+        };
+      });
+      
+      myTimelineItems = new vis.DataSet(myItemsWithTooltipAndStyle);
+
+      const myOptions = {
+        stack: true,
+        zoomMin: 1000 * 60 * 60 * 24, // 1 day
+        zoomMax: 1000 * 60 * 60 * 24 * 365, // ~1 year
+        orientation: 'top',
+      };
+
+      myTimelineInstance = new vis.Timeline(myContainer, myTimelineItems, myOptions);
+      myTimelineInstance.fit();
+    }
+
+    function myAddTodayItem() {
+      const myId = Date.now();
+      const myToday = new Date();
+      const myStartFormatted = myToday.toISOString().slice(0, 10);
+      
+      // New item needs the 'title' property for the tooltip AND the style fix
+      const myNewItem = { 
+        id: myId, 
+        content: 'Today', 
+        start: myStartFormatted,
+        type: 'point', // Added type
+        style: 'dot'   // Added style for axis dot
+      };
+      myNewItem.title = myGetTooltipText(myNewItem);
+
+      myTimelineItems.add(myNewItem);
+      myTimelineInstance.setSelection(myId, { focus: true });
+    }
+
+    function myFocusLatestTimelineItem() {
+      const myAll = myTimelineItems.get();
+      if (myAll.length === 0) return;
+      const mySorted = myAll.slice().sort((a, b) => new Date(a.start) - new Date(b.start));
+      const myLast = mySorted[mySorted.length - 1];
+      myTimelineInstance.setSelection(myLast.id, { focus: true });
+    }
+
+    function myTimelineZoomIn() {
+      myTimelineInstance.zoomIn(0.5);
+    }
+
+    function myTimelineZoomOut() {
+      myTimelineInstance.zoomOut(0.5);
+    }
+
+    // ========== BOOTSTRAP EVERYTHING ==========
+    // Run immediately once page loads
+    (function(){ myInitTimeline(); })();
+  </script>
+
+  <p style="margin-top:24px; font-size:12px; color:#555;">
+    Notes: This demo uses the modern vis package from UNPKG CDN:
+    <code>vis-timeline</code>.
+  </p>
+</body>
+</html>
