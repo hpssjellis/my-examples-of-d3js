@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>vis.js Timeline Box Items with Tooltip</title>
+  <script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
+  <link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+  <style>
+    #visualization {
+      width: 100%;
+      height: 300px;
+      border: 1px solid lightgray;
+    }
+  </style>
+</head>
+<body>
+  <h3>Timeline with Box Items and Tooltip</h3>
+  <div id="visualization"></div>
+
+  <script type="text/javascript">
+    // Create a DataSet (allows two-way data binding)
+    var items = new vis.DataSet([
+      {
+        id: 1,
+        content: 'Project Kickoff',
+        start: '2025-09-01',
+        type: 'box',
+        description: 'Initial project meeting',
+        title: 'Details: Meeting agenda includes scope, roles, and schedule.'
+      },
+      {
+        id: 2,
+        content: 'Design Phase',
+        start: '2025-09-03',
+        type: 'box',
+        description: 'UI/UX design phase',
+        title: 'Details: Wireframes, mockups, and stakeholder review.'
+      },
+      {
+        id: 3,
+        content: 'Prototype Review',
+        start: '2025-09-10',
+        type: 'box',
+        description: 'Reviewing first interactive prototype',
+        title: 'Details: Collecting feedback from internal team.'
+      }
+    ]);
+
+    // Configuration for the Timeline
+    var options = {
+      // You can leave this empty if you define type per item
+    };
+
+    // Create a Timeline
+    var container = document.getElementById('visualization');
+    var timeline = new vis.Timeline(container, items, options);
+  </script>
+</body>
+</html>
