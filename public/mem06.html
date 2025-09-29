@@ -203,7 +203,18 @@
       autofillNextEntry();
     }
 
-
+    function isoToMillis(isoString) {
+      return new Date(isoString).getTime();
+    }
+    
+    /**
+     * Convert milliseconds since epoch to an ISO 8601 datetime string
+     * @param {number} millis - e.g., 1759165800000
+     * @returns {string} - ISO string in UTC (e.g., "2025-09-29T14:30:00.000Z")
+     */
+    function millisToIso(millis) {
+      return new Date(millis).toISOString();
+    }
     // Initialize form on page load
     autofillNextEntry();
   </script>
