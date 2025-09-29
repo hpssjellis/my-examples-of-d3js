@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>vis.js: Timeline — Correct Mouseover Tooltip Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+</head>
+<body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height:1.35; margin:16px;">
+
+  <h1 style="margin:0 0 8px 0;">vis.js Timeline Demo with Correct Tooltip</h1>
+  <p style="margin:0 0 16px 0;">
+    **Hover over an item** to see its content, date, and end date in a standard tooltip.
+  </p>
+
+    <h2 style="margin:24px 0 8px 0;">Timeline</h2>
+  <div id="myTimeline" style="width:100%; height:240px; border:1px solid #ccc; border-radius:10px;"></div>
+  <div style="margin:8px 0;">
+    <input type="button" value="Add Today Item" onclick="myAddTodayItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer;">
+    <input type="button" value="Focus Latest" onclick="myFocusLatestTimelineItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom In" onclick="myTimelineZoomIn()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom Out" onclick="myTimelineZoomOut()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+  </div>
+
+  <script>
+    // ========== TIMELINE ==========
+    let myTimelineInstance, myTimelineItems;
+
+    function myInitTimeline() {
+      const myContainer = document.getElementById('myTimeline');
+      
+      // Helper function to format dates for the tooltip
+      const myFormatDate = (myDateString) => {
+        if (!myDateString) return 'N/A';
+        return new Date(myDateString).toISOString().slice(0, 10);
+      };
+
+      // Prepare the base data
+      const myRawItems = [
+        { id: 1, content: 'Kickoff', start: '2025-09-01' },
+        { id: 2, content: 'Prototype', start: '2025-09-05', end: '2025-09-08' },
+        { id: 3, content: 'Review', start: '2025-09-10' }
+      ];
+      
+      // Create items with the 'title' property for the mouseover popup
+      const myItemsWithTooltip = myRawItems.map(myItem => {
+        let myTitleText = `Content: ${myItem.content}\nStart Date: ${myFormatDate(myItem.start)}`;
+        
+        if (myItem.end) {
+          myTitleText += `\nEnd Date: ${myFormatDate(myItem.end)}`;
+        } else {
+          myTitleText += ` (Single Point)`;
+        }
+
+        // IMPORTANT: The 'title' property is what triggers the native mouseover tooltip.
+        return { ...myItem, title: myTitleText };
+      });
+      
+      myTimelineItems = new vis.DataSet(myItemsWithTooltip);
+
+      const myOptions = {
+        stack: true,
+        zoomMin: 1000 * 60 * 60 * 24, // 1 day
+        zoomMax: 1000 * 60 * 60 * 24 * 365, // ~1 year
+        orientation: 'top',
+      };
+
+      myTimelineInstance = new vis.Timeline(myContainer, myTimelineItems, myOptions);
+      myTimelineInstance.fit();
+    }
+
+    function myAddTodayItem() {
+      const myId = Date.now();
+      const myToday = new Date();
+      
+      // When adding a new item, also calculate its title
+      const myStartFormatted = myToday.toISOString().slice(0, 10);
+      const myTitleText = `Content: Today\nStart Date: ${myStartFormatted} (Single Point)`;
+
+      myTimelineItems.add({ id: myId, content: 'Today', start: myStartFormatted, title: myTitleText });
+      myTimelineInstance.setSelection(myId, { focus: true });
+    }
+
+    function myFocusLatestTimelineItem() {
+      const myAll = myTimelineItems.get();
+      if (myAll.length === 0) return;
+      const mySorted = myAll.slice().sort((a, b) => new Date(a.start) - new Date(b.start));
+      const myLast = mySorted[mySorted.length - 1];
+      myTimelineInstance.setSelection(myLast.id, { focus: true });
+    }
+
+    function myTimelineZoomIn() {
+      myTimelineInstance.zoomIn(0.5);
+    }
+
+    function myTimelineZoomOut() {
+      myTimelineInstance.zoomOut(0.5);
+    }
+
+    // ========== BOOTSTRAP EVERYTHING ==========
+    // Run immediately once page loads
+    (function(){ myInitTimeline(); })();
+  </script>
+
+  <p style="margin-top:24px; font-size:12px; color:#555;">
+    Notes: This demo uses the modern vis package from UNPKG CDN:
+    <code>vis-timeline</code>.
+  </p>
+</body>
+</html>
