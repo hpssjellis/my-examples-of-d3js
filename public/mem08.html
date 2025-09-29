@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vis.js Timeline with Word-Wrapping Tooltips</title>
+  <script src="https://unpkg.com/vis-timeline@7.7.1/standalone/umd/vis-timeline-graph2d.min.js"></script>
+  <link
+    href="https://unpkg.com/vis-timeline@7.7.1/styles/vis-timeline-graph2d.min.css"
+    rel="stylesheet"
+    type="text/css"
+  />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    #timeline {
+      width: 95%;
+      height: 300px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+
+    #custom-tooltip {
+      position: absolute;
+      display: none;
+      max-width: 600px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      z-index: 1000;
+      white-space: normal;
+      pointer-events: none;
+      font-size: 14px;
+    }
+
+    #itemSelectBox {
+      margin-top: 10px;
+      width: 100%;
+      max-width: 600px;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Vis.js Timeline with Custom Word-Wrapping Tooltips</h2>
+
+  <!-- Entry Form -->
+  <div style="margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; max-width: 600px;">
+    <label for="entryId" style="display: inline-block; width: 50px;">ID:</label>
+    <input
+      type="number"
+      id="entryId"
+      readonly
+      style="width: 60px; margin-right: 20px;"
+    />
+    <label for="entryDate" style="display: inline-block; width: 50px;">Date:</label>
+    <input
+      type="datetime-local"
+      id="entryDate"
+      style="width: 220px; margin-right: 20px;"
+    /><br /><br />
+
+    <label for="entryContent" style="display: block; font-weight: bold;">Content:</label>
+    <input
+      type="text"
+      id="entryContent"
+      style="width: 100%; margin-bottom: 10px;"
+      placeholder="Enter content"
+    />
+
+    <label for="entryLongDescription" style="display: block; font-weight: bold;">Long Description:</label>
+    <textarea
+      id="entryLongDescription"
+      rows="4"
+      style="width: 100%; margin-bottom: 10px;"
+      placeholder="Enter long description"
+    ></textarea>
+
+    <button id="nextEntryBtn" style="margin-right: 10px;" onclick="autofillNextEntry()">Next Entry</button>
+    <button id="addEntryBtn" onclick="addEntry()">Add</button>
+    <button onclick="populateSelectBox()" style="margin-left: 10px;">Load Items into Select Box</button>
+
+    <!-- Select Box -->
+    <select id="itemSelectBox" size="5">
+      <!-- Options will be populated dynamically -->
+    </select>
+  </div>
+
+  <div id="timeline"></div>
+  <div id="custom-tooltip"></div>
+
+  <script>
+    const container = document.getElementById('timeline');
+    const tooltip = document.getElementById('custom-tooltip');
+    const itemSelectBox = document.getElementById('itemSelectBox');
+
+    // Initial items
+    const items = new vis.DataSet([
+      {
+        id: 1,
+        content: 'Item 1',
+        start: '2025-09-29T10:00:00',
+        longDescription:
+          'This is a long description for Item 1. It contains a detailed explanation about the event, what it means, why it matters, and how it connects to other parts of the timeline. It is intentionally verbose to test word wrapping.',
+      },
+      {
+        id: 2,
+        content: 'Item 2',
+        start: '2025-09-29T14:00:00',
+        longDescription:
+          'Another item with an even longer tooltip description. This text should properly wrap inside the tooltip box without overflowing the screen or being cut off. Line breaks can also be added.\n\nSecond paragraph of explanation here.',
+      },
+      {
+        id: 3,
+        content: 'Item 3',
+        start: '2025-09-30T09:00:00',
+        longDescription: 'Short description here, just to demonstrate it also works with small tooltips.',
+      },
+    ]);
+
+    // Initialize timeline
+    const timeline = new vis.Timeline(container, items, {
+      type: 'box',
+      tooltip: {
+        followMouse: false,
+      },
+    });
+
+    // Tooltip behavior
+    timeline.on('itemover', function (props) {
+      const item = items.get(props.item);
+      if (item && item.longDescription) {
+        tooltip.innerHTML = item.longDescription.replace(/\n/g, '<br>');
+        tooltip.style.display = 'block';
+      }
+    });
+
+    timeline.on('itemout', function () {
+      tooltip.style.display = 'none';
+    });
+
+    container.addEventListener('mousemove', function (e) {
+      tooltip.style.left = e.pageX + 10 + 'px';
+      tooltip.style.top = e.pageY + 10 + 'px';
+    });
+
+    // Form elements
+    const entryIdInput = document.getElementById('entryId');
+    const entryDateInput = document.getElementById('entryDate');
+    const entryContentInput = document.getElementById('entryContent');
+    const entryLongDescriptionInput = document.getElementById('entryLongDescription');
+
+    function getNextId() {
+      const allIds = items.getIds();
+      return allIds.length ? Math.max(...allIds) + 1 : 1;
+    }
+
+    function getCurrentDateTimeLocal() {
+      const now = new Date();
+      now.setSeconds(0, 0);
+      const offset = now.getTimezoneOffset();
+      const localDate = new Date(now.getTime() - offset * 60000);
+      return localDate.toISOString().slice(0, 16);
+    }
+
+    function autofillNextEntry() {
+      entryIdInput.value = getNextId();
+      entryDateInput.value = getCurrentDateTimeLocal();
+      entryContentInput.value = '';
+      entryLongDescriptionInput.value = '';
+    }
+
+    function addEntry() {
+      const id = Number(entryIdInput.value);
+      const content = entryContentInput.value.trim();
+      const longDescription = entryLongDescriptionInput.value.trim();
+      const dateTimeLocal = entryDateInput.value;
+
+      if (!content) {
+        alert('Please enter content.');
+        return;
+      }
+      if (!dateTimeLocal) {
+        alert('Please enter a valid date and time.');
+        return;
+      }
+
+      const isoString = new Date(dateTimeLocal).toISOString();
+
+      if (items.get(id)) {
+        alert('ID already exists. Click "Next Entry" to get a new ID.');
+        return;
+      }
+
+      items.add({
+        id,
+        content,
+        start: isoString,
+        longDescription,
+      });
+
+      autofillNextEntry();
+    }
+
+    // ✅ Function to populate the select box
+    function populateSelectBox() {
+      const allItems = items.get();
+      itemSelectBox.innerHTML = ''; // Clear previous options
+
+      if (allItems.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = 'No items available';
+        itemSelectBox.appendChild(option);
+        return;
+      }
+
+      allItems.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `#${item.id} - ${item.content}`;
+        itemSelectBox.appendChild(option);
+      });
+    }
+
+    // Initialize form on page load
+    autofillNextEntry();
+  </script>
+</body>
+</html>
