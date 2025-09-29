@@ -350,11 +350,18 @@
       });
     }
 
-   function myLoadQuestion(myPassedValue) {
-      const myItem = items.get(myPassedValue);
-     console.log(myItem)
-      document.getElementById('storedStatement').value = myItem.longDescription
-    }
+function myLoadQuestion(myPassedValue) {
+  console.log('myPassedValue')
+  console.log(myPassedValue)
+  const myItem = items.get(myPassedValue);
+  console.log('myItem');
+  console.log(myItem);
+  if (myItem) {
+    document.getElementById('storedStatement').value = myItem.longDescription || '';
+  } else {
+    console.warn('Item not found with ID:', myPassedValue);
+  }
+}
     
     // fill select  box with items
     populateSelectBox()
