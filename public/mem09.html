@@ -95,7 +95,12 @@
       <h2 style="margin-top: 0;">Statement Comparison Tool</h2>
       
     <!-- Select Box -->
-    <select id="itemSelectBox" size="1" onChange="{ myLoadQuestion();}">
+    <select id="itemSelectBox" size="1" onChange="{ 
+      
+       document.getElementById('storedStatement').value = this.value
+    //  myLoadQuestion();
+      
+      }">
       <!-- Options will be populated dynamically -->
     </select>
       
@@ -349,12 +354,12 @@
         itemSelectBox.appendChild(option);
       });
     }
-
+/*
     myLoadQuestion() {
       const item = items.get(this.value);
       document.getElementById('storedStatement').value = item.longDescription
     }
-    
+    */
     // fill select  box with items
     populateSelectBox()
   </script>
