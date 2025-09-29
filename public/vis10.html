@@ -32,10 +32,10 @@
     }
 
     function myGetTooltipText(myItem) {
-      let myTitleText = `${myItem.content}\n${myFormatDate(myItem.start)}`;
+      let myTitleText = `${myItem.content}/n${myFormatDate(myItem.start)}`;
       
       if (myItem.end) {
-        myTitleText += `\n${myFormatDate(myItem.end)}`;
+        myTitleText += `/n${myFormatDate(myItem.end)}`;
       } else {
         myTitleText += ``;
       }
