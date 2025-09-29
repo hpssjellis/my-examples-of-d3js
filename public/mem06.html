@@ -73,8 +73,10 @@
       placeholder="Enter long description"
     ></textarea>
 
-    <button id="nextEntryBtn" style="margin-right: 10px;">Next Entry</button>
-    <button id="addEntryBtn">Add</button>
+
+    
+    <button id="nextEntryBtn" style="margin-right: 10px;" onclick="autofillNextEntry()">Next Entry</button>
+    <button id="addEntryBtn" onclick="addEntry()">Add</button>
   </div>
 
   <div id="timeline"></div>
@@ -201,8 +203,6 @@
       autofillNextEntry();
     }
 
-    nextEntryBtn.addEventListener('click', autofillNextEntry);
-    addEntryBtn.addEventListener('click', addEntry);
 
     // Initialize form on page load
     autofillNextEntry();
