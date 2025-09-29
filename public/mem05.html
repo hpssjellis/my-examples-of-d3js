@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vis.js Timeline with Word-Wrapping Tooltips</title>
+  <script src="https://unpkg.com/vis-timeline@7.7.1/standalone/umd/vis-timeline-graph2d.min.js"></script>
+  <link href="https://unpkg.com/vis-timeline@7.7.1/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    #timeline {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+    }
+
+    #custom-tooltip {
+      position: absolute;
+      display: none;
+      max-width: 300px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      z-index: 1000;
+      white-space: normal; /* Enables word wrap */
+      pointer-events: none; /* Avoid tooltip capturing mouse */
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Vis.js Timeline with Custom Word-Wrapping Tooltips</h2>
+
+  <div id="timeline"></div>
+  <div id="custom-tooltip"></div>
+
+  <script>
+    const container = document.getElementById('timeline');
+    const tooltip = document.getElementById('custom-tooltip');
+
+    // Define items with long descriptions
+    const items = new vis.DataSet([
+      {
+        id: 1,
+        content: 'Item 1',
+        start: '2025-09-29T10:00:00',
+        longDescription: 'This is a long description for Item 1. It contains a detailed explanation about the event, what it means, why it matters, and how it connects to other parts of the timeline. It is intentionally verbose to test word wrapping.'
+      },
+      {
+        id: 2,
+        content: 'Item 2',
+        start: '2025-09-29T14:00:00',
+        longDescription: 'Another item with an even longer tooltip description. This text should properly wrap inside the tooltip box without overflowing the screen or being cut off. Line breaks can also be added.\n\nSecond paragraph of explanation here.'
+      },
+      {
+        id: 3,
+        content: 'Item 3',
+        start: '2025-09-30T09:00:00',
+        longDescription: 'Short description here, just to demonstrate it also works with small tooltips.'
+      }
+    ]);
+
+    // Initialize timeline
+    const timeline = new vis.Timeline(container, items, {
+      type: 'box',
+      tooltip: {
+        followMouse: false // We’re using a custom tooltip instead
+      }
+    });
+
+    // Show custom tooltip on hover
+    timeline.on('itemover', function (props) {
+      const item = items.get(props.item);
+      if (item && item.longDescription) {
+        // Replace \n with line breaks (optional)
+        tooltip.innerHTML = item.longDescription.replace(/\n/g, '<br>');
+        tooltip.style.display = 'block';
+      }
+    });
+
+    // Hide tooltip when no longer hovering
+    timeline.on('itemout', function () {
+      tooltip.style.display = 'none';
+    });
+
+    // Move tooltip with the mouse
+    container.addEventListener('mousemove', function (e) {
+      tooltip.style.left = (e.pageX + 10) + 'px';
+      tooltip.style.top = (e.pageY + 10) + 'px';
+    });
+  </script>
+
+</body>
+</html>
