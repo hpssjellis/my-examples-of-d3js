@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>vis.js: Timeline — Custom Fast Tooltip Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+
+  <style>
+    /* Minimal CSS for the Custom Tooltip */
+    #myCustomTooltip {
+      position: absolute;
+      background-color: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      z-index: 1000;
+      pointer-events: none; /* Allows mouse events to pass through */
+      display: none; /* Start hidden */
+      white-space: pre-wrap; /* Allows \n to create new lines */
+      transition: opacity 0.1s; /* Optional: Makes it fade in/out smoothly */
+    }
+  </style>
+</head>
+<body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height:1.35; margin:16px;">
+
+  <h1 style="margin:0 0 8px 0;">vis.js Timeline Demo with Custom Fast Tooltip</h1>
+  <p style="margin:0 0 16px 0;">
+    **Hover over an item** for a custom, fast-appearing tooltip.
+  </p>
+
+    <div id="myCustomTooltip"></div>
+
+    <h2 style="margin:24px 0 8px 0;">Timeline</h2>
+  <div id="myTimeline" style="width:100%; height:240px; border:1px solid #ccc; border-radius:10px;"></div>
+  <div style="margin:8px 0;">
+    <input type="button" value="Add Today Item" onclick="myAddTodayItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer;">
+    <input type="button" value="Focus Latest" onclick="myFocusLatestTimelineItem()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom In" onclick="myTimelineZoomIn()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+    <input type="button" value="Zoom Out" onclick="myTimelineZoomOut()" style="padding:6px 10px; border-radius:10px; border:1px solid #888; cursor:pointer; margin-left:4px;">
+  </div>
+
+  <script>
+    // ========== TIMELINE ==========
+    let myTimelineInstance, myTimelineItems;
+    let myCustomTooltipElement; // Variable for the custom tooltip div
+
+    function myFormatDate(myDateString) {
+      return myDateString ? new Date(myDateString).toISOString().slice(0, 10) : 'N/A';
+    }
+
+    function myInitTimeline() {
+      const myContainer = document.getElementById('myTimeline');
+      myCustomTooltipElement = document.getElementById('myCustomTooltip');
+
+      // Prepare the base data (NO 'title' property needed now)
+      const myItemsData = [
+        { id: 1, content: 'Kickoff', start: '2025-09-01' },
+        { id: 2, content: 'Prototype', start: '2025-09-05', end: '2025-09-08' },
+        { id: 3, content: 'Review', start: '2025-09-10' }
+      ];
+      
+      myTimelineItems = new vis.DataSet(myItemsData);
+
+      const myOptions = {
+        stack: true,
+        zoomMin: 1000 * 60 * 60 * 24,
+        zoomMax: 1000 * 60 * 60 * 24 * 365,
+        orientation: 'top',
+      };
+
+      myTimelineInstance = new vis.Timeline(myContainer, myTimelineItems, myOptions);
+      myTimelineInstance.fit();
+
+      // Attach custom mouse events to the timeline instance
+      myTimelineInstance.on('itemover', myShowTooltip);
+      myTimelineInstance.on('itemout', myHideTooltip);
+    }
+
+    function myGetTooltipText(myItem) {
+      let myText = `Content: ${myItem.content}\nStart Date: ${myFormatDate(myItem.start)}`;
+      
+      if (myItem.end) {
+        myText += `\nEnd Date: ${myFormatDate(myItem.end)}`;
+      } else {
+        myText += ` (Single Point)`;
+      }
+      return myText;
+    }
+
+    function myShowTooltip(myProperties) {
+      // myProperties contains the position and the ID of the hovered item
+      const myItemId = myProperties.item;
+      if (!myItemId) return; // No item hovered
+
+      const myItemData = myTimelineItems.get(myItemId);
+      const myText = myGetTooltipText(myItemData);
+      
+      myCustomTooltipElement.innerText = myText;
+      myCustomTooltipElement.style.display = 'block';
+
+      // Position the tooltip based on the mouse position (from myProperties)
+      myCustomTooltipElement.style.left = `${myProperties.event.clientX + 10}px`;
+      myCustomTooltipElement.style.top = `${myProperties.event.clientY + 10}px`;
+    }
+
+    function myHideTooltip() {
+      myCustomTooltipElement.style.display = 'none';
+    }
+    
+    // Existing button functions (modified to not need 'title' property)
+    function myAddTodayItem() {
+      const myId = Date.now();
+      const myToday = new Date();
+      
+      // No need for 'title' property anymore
+      myTimelineItems.add({ 
+        id: myId, 
+        content: 'Today', 
+        start: myToday.toISOString().slice(0, 10) 
+      });
+      myTimelineInstance.setSelection(myId, { focus: true });
+    }
+
+    function myFocusLatestTimelineItem() {
+      const myAll = myTimelineItems.get();
+      if (myAll.length === 0) return;
+      const mySorted = myAll.slice().sort((a, b) => new Date(a.start) - new Date(b.start));
+      const myLast = mySorted[mySorted.length - 1];
+      myTimelineInstance.setSelection(myLast.id, { focus: true });
+    }
+
+    function myTimelineZoomIn() {
+      myTimelineInstance.zoomIn(0.5);
+    }
+
+    function myTimelineZoomOut() {
+      myTimelineInstance.zoomOut(0.5);
+    }
+
+    // ========== BOOTSTRAP EVERYTHING ==========
+    (function(){ myInitTimeline(); })();
+  </script>
+</body>
+</html>
