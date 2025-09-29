@@ -310,7 +310,8 @@
           return;
         }
 
-        const myPrompt = `Are these two statements loosely the same? Answer only with "same" or "different".\nStatement 1: ${storedValue}\nStatement 2: ${userValue}`;
+      //  const myPrompt = `Are these two statements loosely the same? Ignore case. Answer only with "same" or "different".\nStatement 1: ${storedValue}\nStatement 2: ${userValue}`;
+        const myPrompt = `Compare the meaning of the following two statements and determine if they express the same general idea. Ignore differences in letter casing (e.g., uppercase vs lowercase). Only respond with one word: "same" if they mean the same thing, or "different" if they do not. Do not explain your answer.\nStatement 1: ${storedValue}\nStatement 2: ${userValue}`;
 
         const myResponse = await myLanguageModelSession.prompt(myPrompt);
         myOutput.value = myResponse.trim().toLowerCase() === 'same' ? 'Same' : 'Different';
