@@ -79,7 +79,7 @@
     ></textarea>
 
     <button id="nextEntryBtn" style="margin-right: 10px;" onclick="autofillNextEntry()">Next Entry</button>
-    <button id="addEntryBtn" onclick="addEntry()">Add</button>
+    <button id="addEntryBtn" onclick="addEntry(); populateSelectBox();">Add</button>
   </div>
 
   <div id="timeline"></div>
@@ -352,6 +352,8 @@
       });
     }
     
+    // fill select  box with items
+    populateSelectBox()
   </script>
 
 </body>
