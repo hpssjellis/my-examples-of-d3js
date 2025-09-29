@@ -50,6 +50,24 @@
       // You can leave this empty if you define type per item
     };
 
+    /**
+     * Convert an ISO 8601 datetime string to a timestamp in milliseconds
+     * @param {string} isoString - e.g., "2025-09-29T14:30:00Z"
+     * @returns {number} - milliseconds since epoch
+     */
+    function isoToMillis(isoString) {
+      return new Date(isoString).getTime();
+    }
+    
+    /**
+     * Convert milliseconds since epoch to an ISO 8601 datetime string
+     * @param {number} millis - e.g., 1759165800000
+     * @returns {string} - ISO string in UTC (e.g., "2025-09-29T14:30:00.000Z")
+     */
+    function millisToIso(millis) {
+      return new Date(millis).toISOString();
+    }
+
     // Create a Timeline
     var container = document.getElementById('visualization');
     var timeline = new vis.Timeline(container, items, options);
