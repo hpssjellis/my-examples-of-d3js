@@ -364,7 +364,7 @@ function myLoadQuestion(myPassedValue) {
   if (myItem) {
     document.getElementById('storedStatement').value = myItem.longDescription || '';
     document.getElementById('myHint').value = myItem.content || '';
-    
+    document.getElementById('userTest').value = '';
   } else {
     console.warn('Item not found with ID:', myPassedValue);
   }
